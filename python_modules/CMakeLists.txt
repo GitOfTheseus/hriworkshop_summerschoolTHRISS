@@ -69,5 +69,4 @@ set(PATH_TO_VENV ${CMAKE_CURRENT_BINARY_DIR}/${NAME_VENV})
 message(STATUS "PATH_TO_VENV: ${PATH_TO_VENV}")
 
 # add the modules you want to install
-add_subdirectory(addresseeClassifier)
-add_subdirectory(architectureVisualizer)
+add_subdirectory(HRImanager)

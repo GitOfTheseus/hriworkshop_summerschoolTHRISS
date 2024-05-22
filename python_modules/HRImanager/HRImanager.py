@@ -1,12 +1,14 @@
 import yarp
 import os
 import sys
-import cv2
+#import cv2
 from enum import Enum
 
 from utils.cube import Cube
-from utils.State import State
-from utils.object import Object
+from utils.state import State
+from utils.objectReader import ObjectReader
+from utils.actions import Action
+from utils.speech import Speech
 
 def info(msg):
     print("[INFO] {}".format(msg))
@@ -39,8 +41,14 @@ class HRImanager(yarp.RFModule):
         self.bottle_in_port = yarp.BufferedPortBottle()
         self.bottle_out_port = yarp.BufferedPortBottle()
         self.cube_touch_in_port = yarp.BufferedPortBottle()
-        self.cube_action_in_port = yarp.BufferedPortBottle()
+        self.cube_event_in_port = yarp.BufferedPortBottle()
+        self.interaction_out_port = yarp.RpcClient()
+        self.interaction_out_port.setRpcMode(True)
         self.object_in_port = yarp.BufferedPortBottle()
+        self.text_in_port = yarp.BufferedPortBottle()
+        self.LLM_out_port = yarp.BufferedPortBottle()
+        self.LLM_in_port = yarp.BufferedPortBottle()
+
         self.image_in_port = yarp.BufferedPortImageRgb()
         self.image_out_port = yarp.BufferedPortImageRgb()
 
@@ -51,7 +59,9 @@ class HRImanager(yarp.RFModule):
         self.empty_architecture_filename = ""
 
         self.cube = None
-        self.object = None
+        self.action = None
+        self.objectReader = None
+        self.speech = None
 
         self.current_state = State.INITIALIZATION
 
@@ -74,8 +84,10 @@ class HRImanager(yarp.RFModule):
         self.empty_architecture_path = os.path.abspath(os.path.join(__file__, "../tools"))
         self.empty_architecture_filename = rf.check("img_filename", yarp.Value("architecture.jpg"), "module name (string)").asString()
 
-        self.cube = Cube(self.cube_touch_in_port, self.cube_action_in_port)
-        self.object = Object(self.object_in_port)
+        self.cube = Cube(self.cube_touch_in_port, self.cube_event_in_port)
+        self.action = Action(self.interaction_out_port)
+        self.objectReader = ObjectReader(self.object_in_port)
+        self.speech = Speech(self.text_in_port, self.LLM_out_port, self.LLM_in_port)
 
         self.current_state = State.WAITING_FOR_STIMULI
 
@@ -88,9 +100,15 @@ class HRImanager(yarp.RFModule):
         # create cube reader port for touch
         self.cube_touch_in_port.open('/' + self.module_name + '/cube:touch:i')
         # create cube reader port for actions
-        self.cube_action_in_port.open('/' + self.module_name + '/cube:action:i')
+        self.cube_event_in_port.open('/' + self.module_name + '/cube:event:i')
         # create object reader port
+        self.interaction_out_port.open('/' + self.module_name + '/interaction:o')
         self.object_in_port.open('/' + self.module_name + '/object:i')
+        self.text_in_port.open('/' + self.module_name + '/text:i')
+        self.LLM_out_port.open('/' + self.module_name + '/LLM:o')
+        self.LLM_in_port.open('/' + self.module_name + '/LLM:i')
+        if not yarp.Network.connect('/objectRecognition/objects:o', '/' + self.module_name + '/object:i'):
+            error("Unable to connect to the object recognition port")
         # Create image reader port
         self.image_in_port.open('/' + self.module_name + '/image:i')
         # Create image writer port
@@ -107,8 +125,13 @@ class HRImanager(yarp.RFModule):
         self.bottle_in_port.interrupt()
         self.bottle_out_port.interrupt()
         self.cube_touch_in_port.interrupt()
-        self.cube_action_in_port.interrupt()
+        self.cube_event_in_port.interrupt()
+        self.interaction_out_port.interrupt()
         self.object_in_port.interrupt()
+        self.text_in_port.interrupt()
+        self.LLM_out_port.interrupt()
+        self.LLM_in_port.interrupt()
+
         self.image_in_port.interrupt()
         self.image_out_port.interrupt()
 
@@ -120,8 +143,13 @@ class HRImanager(yarp.RFModule):
         self.bottle_in_port.close()
         self.bottle_out_port.close()
         self.cube_touch_in_port.close()
-        self.cube_action_in_port.close()
+        self.cube_event_in_port.close()
+        self.interaction_out_port.close()
         self.object_in_port.close()
+        self.text_in_port.close()
+        self.LLM_out_port.close()
+        self.LLM_in_port.close()
+
         self.image_in_port.close()
         self.image_out_port.close()
 
@@ -161,7 +189,6 @@ class HRImanager(yarp.RFModule):
         #try except?
 
 
-
         if self.bottle_in_port.getInputCount():
             # reading image from yarp port
             input_bottle = self.bottle_in_port.read(False)
@@ -170,18 +197,23 @@ class HRImanager(yarp.RFModule):
                 self.read_bottle(input_bottle)
                 #print(self.activation_dict)
 
-                self.frame = self.displayArchitecture.visualize(self.activation_dict)
-
                 if self.image_out_port.getOutputCount():
                     self.write_yarp_image()
-        else:
 
-            info("no info from the architecture")
 
         # STATE MACHINE
         if self.current_state == State.WAITING_FOR_STIMULI:
+
             self.cube.read_and_process()
-            self.object.read()
+
+            objects_list = self.objectReader.read()
+            if len(objects_list):
+                print("I detected the following categories of objects ", objects_list)
+                
+            text = self.speech.listen()
+            if text:
+                print(text)
+            
             #print("waiting for stimuli")
         elif self.current_state == State.REASONING:
             print("reasoning")
