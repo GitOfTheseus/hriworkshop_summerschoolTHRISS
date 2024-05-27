@@ -1,8 +1,8 @@
 <application>
-    <name>multipartyConversation_Core</name>
+    <name>workshopTHRISS</name>
 
     <authors>
-        <author email="carlo.mazzola@iit.it"> Carlo Mazzola, Giulia Belgiovine </author> 
+        <author email="carlo.mazzola@iit.it"> Carlo Mazzola </author> 
     </authors>
 
     <!--> #############  ############# ############# <!-->
@@ -10,66 +10,71 @@
     <!--> #############  ############# ############# <!-->
     
     <module>
-        <name>stateControllerXAE</name>
+        <name>HRImanager</name>
         <parameters></parameters>
-        <node>icub15</node>
+        <node>localhost</node>
     </module>
 
-    <module>
-        <name>actionManagerXAE</name>
-        <parameters></parameters>
-        <node>icub15</node>
-    </module>
-    
-    <module>
-      	<name>addresseeClassifier</name>
-		<parameters></parameters>
-      	<node>icub-gpu</node>                
-    </module>
-    
     <module>
         <name>objectRecognition</name>
-        <parameters>--task face_detection </parameters>
-        <node>icub-gpu</node>
-    </module>
-    
-    <module>
-        <name>faceID</name>
-        <parameters></parameters>
-        <node>icubsrv</node>
-    </module>
-    
-    <module>
-        <name>faceTracker</name>
-        <parameters>--context faceTracker --from faceTracker.ini --platform berry</parameters>
-        <node>icubsrv</node>
-    </module>
-    
-    <module>
-        <name>acapelaSpeak</name>
-        <parameters>--voice josh --emotion neu </parameters>
-        <node>icubsrv</node>
-    </module>
-    
-    <module>
-        <name>spatialMemory</name>
-        <parameters> </parameters>
-        <node>icub-gpu</node>
-    </module>
-    
-    <module>
-        <name>speech2text</name>
-        <parameters>--model tiny</parameters>
-        <node>icub13</node>
-    </module>
-    
-    <module>
-        <name>communicationReasoner</name>
-        <parameters> </parameters>
-        <node>giulia</node>
+        <parameters>--task detection </parameters>
+        <node>localhost</node>
     </module>
 
-    
+    <module>
+        <name>speechProcessing</name>
+        <parameters>--model tiny</parameters>
+        <node>localhost</node>
+    </module>
+
+    <module>
+        <name>iChat</name>
+        <parameters></parameters>
+        <node>localhost</node>
+    </module>
+
+    <module>
+        <name>interactionInterface</name>
+        <parameters></parameters>
+        <node>localhost</node>
+    </module>
+
+    <module>
+        <name>webcam</name>
+        <parameters></parameters>
+        <node>localhost</node>
+    </module>
+
+    <module>
+        <name>iKinGazeCtrl</name>
+        <parameters>--robot icubSim</parameters>
+        <node>localhost</node>
+    </module>
+
+    <module>
+        <name>interactionInterface</name>
+		<parameters>--config HRImanager.sh --context HRIworkshopTHRISS</parameters>
+        <node>localhost</node>
+    </module>
+
+    <module>
+        <name>ctpService</name>
+		<parameters>--robot icubSim --part right_arm</parameters>
+        <node>localhost</node>
+    </module>
+
+    <module>
+        <name>ctpService</name>
+		<parameters>--robot icubSim --part left_arm</parameters>
+        <node>localhost</node>
+    </module>
+
+	<module>
+        <name>ctpService</name>
+		<parameters>--robot icubSim --part torso</parameters>
+        <node>localhost</node>
+    </module>
+
     <!--> #############  ############# ############# <!-->
     <!--> #############  Connections   ############# <!-->
     <!--> #############  ############# ############# <!-->
@@ -78,182 +83,73 @@
     <!--> ############# vision ############# <!-->
     
     <connection>
-	<from>/icub/camcalib/right/out</from>
+	<from>/webcam/image:o</from>
 	<to>/objectRecognition/image:i</to>
 	<protocol>tcp</protocol>
     </connection>
-    
+
     <connection>
-	<from>/icub/camcalib/right/out</from>
-	<to>/addresseeClassifier/image:i</to>
+	<from>/icubSim/cam/left/rgbImage:o</from>
+	<to>/objectRecognition/image:i</to>
 	<protocol>tcp</protocol>
     </connection>
-    
-    <connection>
-        <from>/icub/camcalib/right/out</from>
-        <to>/spatialMemory/image:i</to>
-        <protocol>tcp</protocol>
-    </connection> 
-    
-    <connection>
-        <from>/icub/cam/left</from>
-        <to>/faceID/image:i</to>
-        <protocol>mcast</protocol>
-    </connection> 
-    
+
     <connection>
         <from>/objectRecognition/objects:o</from>
-        <to>/faceTracker/faceCoordinate:i</to>
-        <protocol>tcp</protocol>
-    </connection>
-    
-    <!--> ############# to StateController ############# <!--> 
-
-    <connection>
-        <from>/powerTrigger/bufferedState:o</from>
-        <to>/stateControllerXAE/audio:i</to>
+        <to>/HRImanager/object:wecam:i</to>
         <protocol>tcp</protocol>
     </connection>
 
-    <connection>
-        <from>/audioPerceptionManager/azimuthAngleDecision:o</from>
-        <to>/stateControllerXAE/speaker:i</to>
-        <protocol>tcp</protocol>
-    </connection>
-    
-    <connection>
-        <from>/addresseeClassifier/addressee:o</from>
-        <to>/stateControllerXAE/addressee:i</to>
-        <protocol>tcp</protocol>
-    </connection>
-    
     <connection>
         <from>/objectRecognition/objects:o</from>
-        <to>/stateControllerXAE/objects:i</to>
+        <to>/HRImanager/object:sim:i</to>
         <protocol>tcp</protocol>
     </connection>
     
+    <!--> ############# haptic ############# <!-->
+
     <connection>
-        <from>/speech2text/text:o</from>
-        <to>/stateControllerXAE/text:i</to>
+        <from></from>
+        <to>/HRImanager/cube:event:i</to>
         <protocol>tcp</protocol>
     </connection>
 
     <connection>
-        <from>/speech2text/text:o</from>
-        <to>/stateControllerXAE/text:i</to>
+        <from></from>
+        <to>/HRImanager/cube:touch:i</to>
         <protocol>tcp</protocol>
     </connection>
 
-    
-    <!--> ############# from StateController ############# <!-->
-    
-    <connection>
-        <from>/stateControllerXAE/action:o</from>
-        <to>/actionManagerXAE/perception_event:i</to>
-        <protocol>tcp</protocol>
-    </connection>
-    
-    <connection>
-        <from>/stateControllerXAE/message:rpc</from>
-        <to>/addresseeClassifier</to>
-        <protocol>tcp</protocol>
-    </connection>
-    
-    <connection>
-        <from>/stateControllerXAE/spatialMemory:rpc</from>
-        <to>/spatialMemory</to>
-        <protocol>tcp</protocol>
-    </connection>
-    
-    <connection>
-        <from>/stateControllerXAE/LLM:o</from>
-        <to>/communicationReasoner/prompt:i</to>
-        <protocol>tcp</protocol>
-    </connection>
-    
-    
-    <!--> ############# actions ############# <!-->
-        
-    <connection>
-        <from>/actionManagerXAE/azimuthAudio:rpc</from>
-        <to>/discreetAllocentricAudioAzimuthLocalizer</to>
-        <protocol>tcp</protocol>
-    </connection>
-    
-    <connection>
-        <from>/actionManagerXAE/ikinGazeCtrl:oi</from>
-        <to>/iKinGazeCtrl/rpc</to>
-        <protocol>tcp</protocol>
-    </connection>
-
-    <connection>
-        <from>/actionManagerXAE/angles:o</from>
-        <to>/iKinGazeCtrl/angles:i</to>
-        <protocol>tcp</protocol>
-    </connection>
-
-    <connection>
-        <from>/actionManagerXAE/faceTracking:rpc</from>
-        <to>/faceTracker</to>
-        <protocol>tcp</protocol>
-    </connection>
-
-    <connection>
-        <from>/actionManagerXAE/faceExpression:o</from>
-        <to>/icub/face/emotions/in</to>
-        <protocol>tcp</protocol>
-    </connection>
-    
     <!--> ############# speech ############# <!-->
     
     <connection>
-        <from>/powerTrigger/bufferedState:o</from>
-        <to>/speech2text/bookmark:i</to>
+        <from>/speechProcessing/text:o</from>
+        <to>/HRImanager/text:i</to>
         <protocol>tcp</protocol>
     </connection>
     
     <connection>
-        <from>/actionManagerXAE/speech:o</from>
-        <to>/acapelaSpeak/speech:i</to>
+        <from>/HRImanager/LLM:o</from>
+        <to>/LLMagent/text:i</to>
         <protocol>tcp</protocol>
     </connection>  
     
     <connection>
-        <from>/communicationReasoner/answer:o</from>
-        <to>/acapelaSpeak/speech:i</to>
+        <from>/LLMagent/answer:o</from>
+        <to>/HRImanager/LLM:i</to>
+        <protocol>tcp</protocol>
+    </connection>
+
+        <!--> ############# actions ############# <!-->
+
+    <connection>
+        <from>/HRImanager/action:rpc</from>
+        <to>/interactionInterface</to>
         <protocol>tcp</protocol>
     </connection>
 
     <connection>
-        <from>/acapelaSpeak/emotion:o</from>
-        <to>/icub/face/emotions/in</to>
-        <protocol>tcp</protocol>
-    </connection>
-    
-    
-    <!--> ############# spatialMemory ############# <!-->
-   
-    <connection>
-        <from>/objectRecognition/objects:o</from>
-        <to>/spatialMemory/face:i</to>
-        <protocol>tcp</protocol>
-    </connection>
-
-    <connection persist="true">
-        <from>/iKinGazeCtrl/angles:o</from>
-        <to>/spatialMemory/icubHeadPose:i</to>
-        <protocol> tcp </protocol>
-    </connection>
-
-    <connection persist="true">
-        <from>/iKinGazeCtrl/events:o</from>
-        <to>/spatialMemory/iKinGazeCtrlEvents:i</to>
-        <protocol>tcp</protocol>
-    </connection>
-
-       <connection persist="true">
-        <from>/spatialMemory/iKinGaze:rpc</from>
+        <from>/HRImanager/gaze:rpc</from>
         <to>/iKinGazeCtrl/rpc</to>
         <protocol>tcp</protocol>
     </connection>
