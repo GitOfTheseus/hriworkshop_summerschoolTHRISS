@@ -61,6 +61,8 @@ class HRImanager(yarp.RFModule):
         self.empty_architecture_path = None
         self.empty_architecture_filename = ""
         self.text = ""
+        self.object_class_dict = {}
+        self.focus_position = None
 
         self.cube = None
         self.action = None
@@ -106,7 +108,6 @@ class HRImanager(yarp.RFModule):
         # create cube reader port for actions
         self.cube_event_in_port.open('/' + self.module_name + '/cube:event:i')
         # create object reader port
-
         self.action_rpc_port.open('/' + self.module_name + '/action:rpc')
         self.gaze_rpc_port.open('/' + self.module_name + '/gaze:rpc')
         self.obj_webcam_in_port.open('/' + self.module_name + '/object:webcam:i')
@@ -191,39 +192,29 @@ class HRImanager(yarp.RFModule):
 
            Returns : The period of the module in seconds.
         """
-        return 0.1
+        return 0.5
 
     def updateModule(self):
 
-        # STATE MACHINE
         if self.current_state == State.WAITING_FOR_STIMULI:
 
             self.cube.read_and_process()
-            objects_list = self.objectReader.read()
-            if objects_list:
-                print("I detected the following categories of objects ", objects_list)
-                
-            self.text = self.speech.listen()
-            if self.text:
-                self.changeState(State.REASONING)
-            
-            #print("waiting for stimuli")
-        elif self.current_state == State.REASONING:
-            print("reasoning")
 
-            if self.text:
-                category = self.speech.reason(self.text)
-                print(category)
-                self.text = ""
+            self.focus_position = self.objectReader.focus()
+
+            if self.focus_position:
+                self.changeState(State.ACTING_TOWARD_ENVIRONMENT)
 
         elif self.current_state == State.ACTING_TOWARD_ENVIRONMENT:
-            print("action")
+            
+            self.action.look(self.focus_position)
+
+            if self.action.check_motion_completed(self.focus_position):
+                self.changeState(State.ACTING_TOWARD_ENVIRONMENT)
 
         return True
 
-
     def read_bottle(self, yarp_bottle):
-
 
         for n, m in enumerate(self.activation_dict.keys()):
             if n == 0:
