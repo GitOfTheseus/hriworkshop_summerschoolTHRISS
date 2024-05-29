@@ -26,8 +26,12 @@ class Action:
             action_bottle.addString(action)
             self.action_port.write(action_bottle, response)
             print("Sending to action port cmd: {}".format(action_bottle.toString()))
+            for i in range(response.size()):
+                print(f"Response is {response.get(i).toString()}")
+                if response.get(i).asString() == "ok":
+                    return True
 
-        return True
+        return False
 
     def look(self, position_3D):
 
@@ -53,7 +57,7 @@ class Action:
 
             print(f"requesting the following command: {request_bottle.toString()}. Response: {response_bottle.toString()}")
 
-    def check_motion_completed(self, target):
+    def check_gaze_motion_completed(self, target):
 
         if self.gaze_in_port.getInputCount():
             input_bottle = self.gaze_in_port.read(False)

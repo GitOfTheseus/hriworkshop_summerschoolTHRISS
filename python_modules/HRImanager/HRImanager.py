@@ -46,6 +46,7 @@ class HRImanager(yarp.RFModule):
         self.action_rpc_port.setRpcMode(True)
         self.gaze_rpc_port = yarp.RpcClient()
         self.gaze_rpc_port.setRpcMode(True)
+        self.gaze_in_port = yarp.BufferedPortBottle()
         self.obj_webcam_in_port = yarp.BufferedPortBottle()
         self.obj_sim_in_port = yarp.BufferedPortBottle()
         self.text_in_port = yarp.BufferedPortBottle()
@@ -89,7 +90,7 @@ class HRImanager(yarp.RFModule):
         self.empty_architecture_filename = rf.check("img_filename", yarp.Value("architecture.jpg"), "module name (string)").asString()
 
         self.cube = Cube(self.cube_touch_in_port, self.cube_event_in_port)
-        self.action = Action(self.action_rpc_port, self.gaze_rpc_port)
+        self.action = Action(self.action_rpc_port, self.gaze_rpc_port, self.gaze_in_port)
         self.objectReader = ObjectReader(self.obj_webcam_in_port, self.obj_sim_in_port, self.gaze_rpc_port)
         self.speech = Speech(self.text_in_port, self.LLM_out_port, self.LLM_in_port)
 
@@ -109,6 +110,7 @@ class HRImanager(yarp.RFModule):
 
         self.action_rpc_port.open('/' + self.module_name + '/action:rpc')
         self.gaze_rpc_port.open('/' + self.module_name + '/gaze:rpc')
+        self.gaze_in_port.open('/' + self.module_name + '/gaze:i')
         self.obj_webcam_in_port.open('/' + self.module_name + '/object:webcam:i')
         self.obj_sim_in_port.open('/' + self.module_name + '/object:sim:i')
         self.text_in_port.open('/' + self.module_name + '/text:i')
@@ -133,6 +135,7 @@ class HRImanager(yarp.RFModule):
         self.cube_event_in_port.interrupt()
         self.action_rpc_port.interrupt()
         self.gaze_rpc_port.interrupt()
+        self.gaze_in_port.interrupt()
         self.obj_webcam_in_port.interrupt()
         self.obj_sim_in_port.interrupt()
         self.text_in_port.interrupt()
@@ -153,6 +156,7 @@ class HRImanager(yarp.RFModule):
         self.cube_event_in_port.close()
         self.action_rpc_port.close()
         self.gaze_rpc_port.close()
+        self.gaze_in_port.close()
         self.obj_webcam_in_port.close()
         self.obj_sim_in_port.close()
         self.text_in_port.close()
@@ -202,7 +206,8 @@ class HRImanager(yarp.RFModule):
             objects_list = self.objectReader.read()
             if objects_list:
                 print("I detected the following categories of objects ", objects_list)
-                
+
+
             self.text = self.speech.listen()
             if self.text:
                 self.changeState(State.REASONING)

@@ -20,11 +20,9 @@ class ObjectReader:
                 for i in range(input_bottle.size()):
                     object_class_list.append(input_bottle.get(i).asList().get(0).asList().get(1).asString())
 
-
                 return object_class_list
 
         return
-
 
     def localize(self):
 
