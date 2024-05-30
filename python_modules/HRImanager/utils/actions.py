@@ -2,11 +2,12 @@ import yarp
 
 class Action:
 
-    def __init__(self, action_port, gaze_rpc_port, gaze_in_port):
+    def __init__(self, action_port, gaze_rpc_port, gaze_in_port, speech_out_port):
 
         self.action_port = action_port
         self.gaze_rpc_port = gaze_rpc_port
         self.gaze_in_port = gaze_in_port
+        self.speech_out_port = speech_out_port
 
         print("initialization of the action")
 
@@ -74,7 +75,11 @@ class Action:
 
         return False
 
+    def speak(self, object_category):
 
-
+        if self.speech_out_port.getOutputCount():
+            write_bottle = yarp.Bottle()
+            write_bottle.clear()
+            write_bottle.addString(object_category)
 
 

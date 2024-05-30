@@ -31,8 +31,6 @@ class HRImanager(yarp.RFModule):
     def __init__(self):
         yarp.RFModule.__init__(self)
 
-        self.models_folder = os.path.abspath(os.path.join(__file__, "../../../models"))
-
         # handle port for the RFModule
         self.module_name = None
         self.handle_port = None
@@ -52,24 +50,21 @@ class HRImanager(yarp.RFModule):
         self.text_in_port = yarp.BufferedPortBottle()
         self.LLM_out_port = yarp.BufferedPortBottle()
         self.LLM_in_port = yarp.BufferedPortBottle()
-        
-        self.image_in_port = yarp.BufferedPortImageRgb()
-        self.image_out_port = yarp.BufferedPortImageRgb()
+        self.speech_out_port = yarp.BufferedPortBottle()
 
-        # Image parameters
-        self.frame = yarp.ImageRgb()
-
-        self.empty_architecture_path = None
-        self.empty_architecture_filename = ""
         self.text = ""
         self.object_class_dict = {}
         self.object_class_list = []
         self.focus_position = None
         self.object_position = ""
+        self.object_category = ""
+        self.text = ""
+
         self.cube = None
         self.action = None
         self.objectReader = None
         self.speech = None
+        self.memory = None
 
         self.current_state = State.INITIALIZATION
 
@@ -82,18 +77,8 @@ class HRImanager(yarp.RFModule):
         # Module parameters
         self.module_name = rf.check("name", yarp.Value("HRImanager"), "module name (string)").asString()
 
-
-        if rf.check("modules"):
-            modules_bottle = rf.find("modules").asList()
-            for n in range(modules_bottle.size()):
-                self.activation_dict[modules_bottle.get(n).asString()] = 0
-            print(self.activation_dict)
-
-        self.empty_architecture_path = os.path.abspath(os.path.join(__file__, "../tools"))
-        self.empty_architecture_filename = rf.check("img_filename", yarp.Value("architecture.jpg"), "module name (string)").asString()
-
         self.cube = Cube(self.cube_touch_in_port, self.cube_event_in_port)
-        self.action = Action(self.action_rpc_port, self.gaze_rpc_port, self.gaze_in_port)
+        self.action = Action(self.action_rpc_port, self.gaze_rpc_port, self.gaze_in_port, self.speech_out_port)
         self.objectReader = ObjectReader(self.obj_webcam_in_port, self.obj_sim_in_port, self.gaze_rpc_port)
         self.speech = Speech(self.text_in_port, self.LLM_out_port, self.LLM_in_port)
 
@@ -118,17 +103,15 @@ class HRImanager(yarp.RFModule):
         self.text_in_port.open('/' + self.module_name + '/text:i')
         self.LLM_out_port.open('/' + self.module_name + '/LLM:o')
         self.LLM_in_port.open('/' + self.module_name + '/LLM:i')
-        # Create image reader port
-        self.image_in_port.open('/' + self.module_name + '/image:i')
-        # Create image writer port
-        self.image_out_port.open('/' + self.module_name + '/image:o')
+        self.speech_out_port.open('/' + self.module_name + '/speech:o')
 
         info("Initialization complete")
 
         return True
 
     def interruptModule(self):
-        print("[INFO] Stopping the module")
+
+        info("Stopping the module")
 
         self.handle_port.interrupt()
         self.bottle_in_port.interrupt()
@@ -143,9 +126,7 @@ class HRImanager(yarp.RFModule):
         self.text_in_port.interrupt()
         self.LLM_out_port.interrupt()
         self.LLM_in_port.interrupt()
-
-        self.image_in_port.interrupt()
-        self.image_out_port.interrupt()
+        self.speech_out_port.interrupt()
 
         return True
 
@@ -164,15 +145,13 @@ class HRImanager(yarp.RFModule):
         self.text_in_port.close()
         self.LLM_out_port.close()
         self.LLM_in_port.close()
+        self.speech_out_port.close()
 
-        self.image_in_port.close()
-        self.image_out_port.close()
+        info("Doors closed")
 
         return True
 
     def respond(self, command, reply):
-        # Is the command recognized
-        #rec = False
 
         reply.clear()
 
@@ -206,8 +185,7 @@ class HRImanager(yarp.RFModule):
             self.object_class_list = self.objectReader.read()
             if self.object_class_list:
                 self.object_class_list = [obj for obj in self.object_class_list if object != "person"]
-                self.object_class_list.remove("person")
-                print("I detected the following categories of objects ", self.object_class_list)
+                info(f"I detected the following categories of objects {self.object_class_list}")
 
             self.object_class_dict = self.objectReader.localize()
 
@@ -226,7 +204,8 @@ class HRImanager(yarp.RFModule):
 
                 else:
                     self.focus_position = ()
-                    print(f"no {obj} in the simulated environment")
+                    self.object_position = ""
+                    info(f"no {obj} in the simulated environment")
 
         elif self.current_state == State.ACTING_TOWARD_ENVIRONMENT:
             
@@ -240,23 +219,6 @@ class HRImanager(yarp.RFModule):
 
         return True
 
-    def read_bottle(self, yarp_bottle):
-
-        for n, m in enumerate(self.activation_dict.keys()):
-            if n == 0:
-                pass
-            module = yarp_bottle.get(n).asList().get(0).asString()
-            activation = yarp_bottle.get(n).asList().get(1).asInt32()
-            #print(n, m, module, activation)
-            self.activation_dict[module] = activation
-            #if m != module:
-                #warning("there might be problems while reading the bottle in input: "
-                #        "check the bottle and the dictionary share the same structure")
-        #else:
-        #    warning("what you are reading in input is incompatible with what you expect")
-
-        return
-
     def changeState(self, new_state):
 
         self.current_state = new_state
@@ -264,22 +226,7 @@ class HRImanager(yarp.RFModule):
         return
 
 
-    def write_yarp_image(self):
-        """
-        Handle function to stream the recognize faces with their bounding rectangles
-        :param img_array:
-        :return:
-        """
-        display_buf_image = self.image_out_port.prepare()
-        display_buf_image.setExternal(self.frame.tobytes(), self.frame.shape[1], self.frame.shape[0])
-        self.image_out_port.write()
-
-        return
-
-
-
 if __name__ == '__main__':
-
 
     # Initialise YARP
     if not yarp.Network.checkNetwork():

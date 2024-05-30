@@ -182,22 +182,53 @@ class HRImanager(yarp.RFModule):
 
         if self.current_state == State.WAITING_FOR_STIMULI:
 
-            self.cube.read_and_process()
+            self.object_class_list = self.objectReader.read()
+            if self.object_class_list:
+                self.object_class_list = [obj for obj in self.object_class_list if object != "person"]
+                info(f"I detected the following categories of objects {self.object_class_list}")
 
-            self.focus_position = self.objectReader.focus()
+            self.object_class_dict = self.objectReader.localize()
 
-            if self.focus_position:
+            if self.object_class_list:
+                self.text = self.speech.listen()
+                if self.text:
+                    self.changeState(State.REASONING)
+
+        elif self.current_state == State.REASONING:
+
+            self.object_category = self.speech.reason(self.text)
+            if self.object_category in self.object_class_list:
+                self.focus_position = self.object_class_dict[self.object_category]
+                self.object_position = self.objectReader.discretized_position(self.focus_position)
                 self.changeState(State.ACTING_TOWARD_ENVIRONMENT)
 
-        elif self.current_state == State.ACTING_TOWARD_ENVIRONMENT:
+            else:
 
+                for obj in self.object_class_list:
+
+                    if obj in list(self.object_class_dict.keys()):
+                        self.focus_position = self.object_class_dict[obj]
+                        self.object_position = self.objectReader.discretized_position(self.focus_position)
+                        self.changeState(State.ACTING_TOWARD_ENVIRONMENT)
+                        break
+
+                    else:
+                        self.focus_position = ()
+                        self.object_position = ""
+                        info(f"no {obj} in the simulated environment")
+
+        elif self.current_state == State.ACTING_TOWARD_ENVIRONMENT:
+            
             self.action.look(self.focus_position)
 
-            if self.action.check_motion_completed(self.focus_position):
+            pointing_motion_done = self.action.execute(f"point_{self.object_position}")
+
+            if pointing_motion_done and self.action.check_gaze_motion_completed(self.focus_position):
                 self.changeState(State.WAITING_FOR_STIMULI)
+                self.action.execute("go_home")
+                self.object_category = ""
 
         return True
-
 
     def changeState(self, new_state):
 

@@ -7,7 +7,7 @@ set(MODULE_NAME HRImanager)
 message("Installing ${MODULE_NAME}")
 
 # attach ".sh" to the end of the module name
-set(PATH_TO_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/visualizer.py)
+set(PATH_TO_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/HRImanager_step1.py)
 #set(PATH_TO_VENV path/to/venv) # inherited from parent CMakeLists.txt
 
 ## Create a .sh file that activate the shared virtual environment and run the module ##
