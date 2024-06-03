@@ -1,0 +1,35 @@
+FROM icubteamcode/superbuild-gazebo:v2024.02.0_sources
+#FROM icubteamcode/superbuild-gazebo:v2024.02.0_binaries
+
+ARG SOURCE_FOLDER=/usr/local/src/robot
+RUN command mkdir -p $SOURCE_FOLDER/cognitiveInteraction
+
+# INSTALL PYTHON 3.10 AND MAKE IT DEFAULT
+RUN apt update
+#RUN apt install -y software-properties-common
+RUN add-apt-repository ppa:deadsnakes/ppa
+RUN apt update
+RUN apt install -y python3.10 python3.10-venv python3.10-dev
+RUN ls -la /usr/bin/python3
+RUN rm /usr/bin/python3
+RUN ln -s python3.10 /usr/bin/python3
+
+# RECOMPILING SUPERBUILD WITH DESIRED PYTHON VERSION
+RUN cd /projects/robotology-superbuild/build && \
+     cmake .. -D ROBOTOLOGY_USES_PYTHON=ON && \
+     make -j$(nproc) 
+
+# COPY MODULES FROM LOCAL FOLDER
+COPY webcam.py /usr/local/src/robot/cognitiveInteraction/webcam.py
+
+# DOWNLOAD MODULES ...
+# RUN cd $SOURCE_FOLDER && \
+#      git clone https://github.com/robotology/icub-models.git && \
+#      cd icub-models && \
+#      git checkout $ICUB_MODELS_VERSION && \
+#      mkdir build && \
+#      cd build/ && \
+#      cmake .. && \
+#      make -j `nproc` install
+
+CMD [ "bash" ]
