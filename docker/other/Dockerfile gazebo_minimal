@@ -1,0 +1,19 @@
+FROM gazebo:latest
+
+# fix X11 forwarding
+RUN useradd -u 8877 luca
+
+RUN apt update
+RUN apt install -y build-essential
+RUN apt install -y cmake git openssh-client git
+# Some QT-Apps don't show controls without this
+ENV QT_X11_NO_MITSHM 1
+
+    
+#RUN echo "/usr/local/lib" > /etc/ld.so.conf.d/99local.conf && ldconfig
+
+RUN apt install -y ffmpeg libcanberra-gtk-module mesa-utils
+
+# place here your application's setup specifics
+CMD [ "gzserver", "--verbose" ]
+#"/usr/share/gazebo-9/worlds/empty.world" ]

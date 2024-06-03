@@ -1,0 +1,8 @@
+openai-whisper
+SpeechRecognition
+pydub 
+pyaudio
+torch
+numpy
+transformers
+librosa

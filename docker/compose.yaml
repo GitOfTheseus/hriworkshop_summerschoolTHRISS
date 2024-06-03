@@ -1,0 +1,17 @@
+version: '3'
+services:
+  composedocker:
+    image: summerschool:latest
+    container_name: ROBOTOLOGY  # Specifica il nome del container
+    ports:
+      - "10000:10000/tcp"
+      - "10000:10000/udp"
+    devices:
+      - "/dev/video0:/dev/video0"
+    volumes:
+      - /tmp/.X11-unix/:/tmp/.X11-unix/
+    environment:
+      - DISPLAY=$DISPLAY
+    stdin_open: true
+    tty: true
+    restart: always
