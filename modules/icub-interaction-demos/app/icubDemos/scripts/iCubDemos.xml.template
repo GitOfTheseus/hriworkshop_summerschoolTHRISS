@@ -1,0 +1,56 @@
+<application>
+<name>ICub Interaction Demos</name>
+
+        <dependencies>
+        </dependencies>
+
+        <module>
+                <name>interactionInterface</name>
+		<parameters>--config icub_demos.sh --context icubDemos</parameters>
+                <node>icub16</node>                
+        </module>
+      
+        <module>
+                <name>ctpService</name>
+		<parameters>--robot icub --part right_arm</parameters>
+                <node>icub16</node>                
+        </module>
+
+        <module>
+                <name>ctpService</name>
+		<parameters>--robot icub --part left_arm</parameters>
+                <node>icub16</node>                
+        </module>
+   
+        <!--<module>
+                <name>ctpService</name>
+		<parameters>--robot icub --part head</parameters>
+                <node>icub16</node>                
+        </module>-->
+
+	<module>
+                <name>ctpService</name>
+		<parameters>--robot icub --part torso</parameters>
+                <node>icub16</node>                
+        </module>
+
+	<module>
+                <name>yarpview</name>
+		<parameters>--name /imageWithText --w 1000 --h 600 --RefreshTime 33</parameters>
+                <node>icub16</node>                
+        </module>
+
+	<connection>
+	  <output>/iSpeakIt/emotions:o</output>
+	  <input>/icub/face/emotions/in</input>
+	  <protocol>tcp</protocol>
+	</connection>
+
+
+	<connection>
+	  <output>/interactionInterface/imageText:o</output>
+	  <input>/imageWithText</input>
+	  <protocol>tcp</protocol>
+	</connection>
+</application>
+

@@ -1,0 +1,13 @@
+.vscode
+.history
+.idea
+**/build
+**/__pycache__
+## Pyinstaller files
+**/dist
+*.spec
+*_venv
+*.pt
+**.DS_Store
+*.jpg
+/models/y*

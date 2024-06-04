@@ -1,0 +1,30 @@
+<application>
+
+    <name> SpeechRecogntion </name>
+
+    <!-->  
+    MODULES.    
+    <!-->
+    <module>
+        <name> yarpdev </name>
+        <parameters> --device AudioRecorderWrapper --subdevice portaudioRecorder --start </parameters>
+        <node> icub-head </node>
+    </module>
+
+    <module>
+        <name> speech2text </name>
+        <parameters> --model tiny.en </parameters>
+        <node> localhost </node>
+    </module>
+
+
+    <!-->  
+    CONNECTIONS.
+    <!-->
+    <connection>
+        <from> /your_microphone:o  </from>
+        <to>   /speech2text/speech:o </to>
+        <protocol> tcp </protocol>
+    </connection>
+
+</application>

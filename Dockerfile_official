@@ -1,0 +1,82 @@
+FROM icubteamcode/superbuild-gazebo:v2024.02.0_sources
+#FROM icubteamcode/superbuild-gazebo:v2024.02.0_binaries
+
+ARG SOURCE_FOLDER=/usr/local/src/robot
+RUN command mkdir -p $SOURCE_FOLDER/cognitiveInteraction
+
+# INSTALL PYTHON 3.10 AND MAKE IT DEFAULT
+RUN apt update
+#RUN apt install -y software-properties-common
+RUN add-apt-repository ppa:deadsnakes/ppa
+RUN apt update
+RUN apt install -y python3.10 python3.10-venv python3.10-dev
+RUN ls -la /usr/bin/python3
+RUN rm /usr/bin/python3
+RUN ln -s python3.10 /usr/bin/python3
+RUN python3 -m ensurepip --upgrade
+RUN pip3 install virtualenv
+
+# RECOMPILING SUPERBUILD WITH DESIRED PYTHON VERSION
+RUN cd /projects/robotology-superbuild/build && \
+     cmake .. -D ROBOTOLOGY_USES_PYTHON=ON && \
+     make -j$(nproc) 
+
+# COPY MODULES FROM LOCAL FOLDER
+#COPY webcam.py /usr/local/src/robot/cognitiveInteraction/webcam.py
+
+
+# (1) INSTALL iCUBE
+RUN cd $SOURCE_FOLDER && \
+     git clone https://gitlab.iit.it/cognitiveInteraction/icube-yarp.git&& \
+     cd icube-yarp && \
+     mkdir build && \
+     cd build/ && \
+     cmake .. && \
+     make -j `nproc` install
+
+# (2) INSTALL Object Detector
+COPY ./modules/ /usr/local/src/robot/cognitiveInteraction
+
+RUN  cd /usr/local/src/robot/cognitiveInteraction/objectRecognition && \
+     mkdir build && \
+     cd build/ && \
+     cmake .. && \
+     make -j `nproc` install
+
+# (3) INSTALL Interaction Demos
+RUN  cd /usr/local/src/robot/cognitiveInteraction/icub-interaction-demos && \
+     mkdir build && \
+     cd build/ && \
+     cmake .. && \
+     make -j `nproc` install
+
+
+# (4) INSTALL Interaction Demos
+RUN  cd /usr/local/src/robot/cognitiveInteraction/HRI-manager && \
+     mkdir build && \
+     cd build/ && \
+     cmake .. && \
+     make -j `nproc` install
+
+# (5) INSTALL Speech To Text
+RUN  cd /usr/local/src/robot/cognitiveInteraction/HRI-manager && \
+     mkdir build && \
+     cd build/ && \
+     cmake .. && \
+     make -j `nproc` install
+
+# (6) INSTALL Text To Speech
+RUN  cd /usr/local/src/robot/cognitiveInteraction/Speech2text && \
+     mkdir build && \
+     cd build/ && \
+     cmake .. && \
+     make -j `nproc` install
+
+
+# Remove useless .xml app files not required for the summer school
+RUN rm -rf /projects/cer
+RUN rm -rf /projects/cer-sim
+RUN rm -rf /usr/local/share/navigation
+RUN rm -rf /usr/local/share/yarp/applications
+
+CMD [ "bash" ]

@@ -1,4 +1,2 @@
-build
-python_modules/HRImanager/.idea
-python_modules/HRImanager/utils/__pycache__
+modules/*/build
 .idea
