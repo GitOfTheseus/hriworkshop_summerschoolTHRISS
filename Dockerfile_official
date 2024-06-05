@@ -22,7 +22,7 @@ RUN cd /projects/robotology-superbuild/build && \
      make -j$(nproc) 
 
 # COPY MODULES FROM LOCAL FOLDER
-#COPY webcam.py /usr/local/src/robot/cognitiveInteraction/webcam.py
+# COPY webcam.py /usr/local/src/robot/cognitiveInteraction/webcam.py
 
 
 # (1) INSTALL iCUBE
@@ -58,15 +58,15 @@ RUN  cd /usr/local/src/robot/cognitiveInteraction/HRI-manager && \
      cmake .. && \
      make -j `nproc` install
 
-# (5) INSTALL Speech To Text
-RUN  cd /usr/local/src/robot/cognitiveInteraction/HRI-manager && \
-     mkdir build && \
-     cd build/ && \
-     cmake .. && \
-     make -j `nproc` install
+# (5) INSTALL Text To Speech
+# RUN  cd /usr/local/src/robot/cognitiveInteraction/HRI-manager && \
+#      mkdir build && \
+#      cd build/ && \
+#      cmake .. && \
+#      make -j `nproc` install
 
-# (6) INSTALL Text To Speech
-RUN  cd /usr/local/src/robot/cognitiveInteraction/Speech2text && \
+# (6) INSTALL Speech To Text
+RUN  cd /usr/local/src/robot/cognitiveInteraction/speech2text && \
      mkdir build && \
      cd build/ && \
      cmake .. && \
