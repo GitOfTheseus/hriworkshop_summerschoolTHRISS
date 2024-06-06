@@ -10,7 +10,7 @@
     <!--> #############  ############# ############# <!-->
     <module>
         <name>gazebo</name>
-        <parameters>'/usr/local/src/robot/cognitiveInteraction/modules/gazebo/obj_and_robot.sdf'</parameters>
+        <parameters>'/usr/share/gazebo-11/worlds/workshop.world'</parameters>
         <node>localhost</node>
     </module>
 

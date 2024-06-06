@@ -21,11 +21,11 @@ RUN cd /projects/robotology-superbuild/build && \
      cmake .. -D ROBOTOLOGY_USES_PYTHON=ON && \
      make -j$(nproc) 
 
-# COPY MODULES FROM LOCAL FOLDER
-# COPY webcam.py /usr/local/src/robot/cognitiveInteraction/webcam.py
+# COPY GAZEBO MODULES AND WORLD TO THE CORRECT FOLDER
+COPY ./modules/gazebo/models /usr/share/gazebo-11/models
+COPY ./modules/gazebo/worlds  /usr/share/gazebo-11/worlds
 
-
-# (1) INSTALL iCUBE
+# # (1) INSTALL iCUBE
 RUN cd $SOURCE_FOLDER && \
      git clone https://gitlab.iit.it/cognitiveInteraction/icube-yarp.git&& \
      cd icube-yarp && \
