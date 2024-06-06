@@ -1,7 +1,7 @@
 version: '3'
 services:
   composedocker:
-    image: hriworkshopthriss:latest #missingsignal/summerschool:latest #just sumerschool if we use the local image
+    image: missingsignal/summerschool:latest #just sumerschool if we use the local image
     container_name: ROBOTOLOGY  # Specifica il nome del container
     ports:
       - "10000:10000/tcp"
