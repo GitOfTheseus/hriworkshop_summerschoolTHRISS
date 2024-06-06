@@ -21,11 +21,11 @@ RUN cd /projects/robotology-superbuild/build && \
      cmake .. -D ROBOTOLOGY_USES_PYTHON=ON && \
      make -j$(nproc) 
 
-# COPY MODULES FROM LOCAL FOLDER
-#COPY webcam.py /usr/local/src/robot/cognitiveInteraction/webcam.py
+# COPY GAZEBO MODULES AND WORLD TO THE CORRECT FOLDER
+COPY ./modules/gazebo/models /usr/share/gazebo-11/models
+COPY ./modules/gazebo/worlds  /usr/share/gazebo-11/worlds
 
-
-# (1) INSTALL iCUBE
+# # (1) INSTALL iCUBE
 RUN cd $SOURCE_FOLDER && \
      git clone https://gitlab.iit.it/cognitiveInteraction/icube-yarp.git&& \
      cd icube-yarp && \
@@ -58,15 +58,15 @@ RUN  cd /usr/local/src/robot/cognitiveInteraction/HRI-manager && \
      cmake .. && \
      make -j `nproc` install
 
-# (5) INSTALL Speech To Text
-RUN  cd /usr/local/src/robot/cognitiveInteraction/HRI-manager && \
-     mkdir build && \
-     cd build/ && \
-     cmake .. && \
-     make -j `nproc` install
+# (5) INSTALL Text To Speech
+# RUN  cd /usr/local/src/robot/cognitiveInteraction/HRI-manager && \
+#      mkdir build && \
+#      cd build/ && \
+#      cmake .. && \
+#      make -j `nproc` install
 
-# (6) INSTALL Text To Speech
-RUN  cd /usr/local/src/robot/cognitiveInteraction/Speech2text && \
+# (6) INSTALL Speech To Text
+RUN  cd /usr/local/src/robot/cognitiveInteraction/speech2text && \
      mkdir build && \
      cd build/ && \
      cmake .. && \
