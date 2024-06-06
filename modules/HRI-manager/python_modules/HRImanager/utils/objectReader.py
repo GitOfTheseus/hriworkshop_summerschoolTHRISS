@@ -41,23 +41,28 @@ class ObjectReader:
 
         return
 
-    def focus(self):
+    def focus(self, object_category="frisbee"):
 
         if self.obj_sim_port.getInputCount():
             input_bottle = self.obj_sim_port.read(False)
             if input_bottle is not None:
                 # objects in bottle are ordered according the confidence of recognition
-                pixel_coord = self.get_center(input_bottle.get(0).asList().get(2).asList().get(1).asList())
-                position_3D = self.get_3D_position(pixel_coord)
+                for k in range(input_bottle.size()):
+                    if input_bottle.get(k).asList().get(0).asList().get(1).asString() == object_category:
+                        object_coord_list = []
+                        for i in range(input_bottle.get(0).asList().get(2).asList().get(1).asList().size()):
+                            object_coord_list.append(input_bottle.get(0).asList().get(2).asList().get(1).asList().get(i).asFloat32())
+                        pixel_coord = self.get_center(object_coord_list)
+                        position_3D = self.get_3D_position(pixel_coord)
 
-                return position_3D
+                        return position_3D
 
         return
 
     def get_center(self, bounding_box):
 
-        x = abs(bounding_box[2]-bounding_box[0])/2
-        y = abs(bounding_box[3] - bounding_box[1]) / 2
+        x = abs(bounding_box[2] + bounding_box[0]) / 2
+        y = abs(bounding_box[3] + bounding_box[1]) / 2
 
         return (x, y)
 
@@ -76,15 +81,15 @@ class ObjectReader:
             request_bottle.addString("3D")
             request_bottle.addString("mono")
             info_bottle.addString("left")
-            info_bottle.addInt64(pixel_coord[0])
-            info_bottle.addInt64(pixel_coord[1])
-            info_bottle.addFloat64(0.5) # distance
+            info_bottle.addFloat64(pixel_coord[0])
+            info_bottle.addFloat64(pixel_coord[1])
+            info_bottle.addFloat64(0) # distance was 0.5
             request_bottle.addList().copy(info_bottle)
 
             self.gaze_port.write(request_bottle, response_bottle)
 
-            x, y, z = (round(response_bottle.get(0).asFloat64,3), round(response_bottle.get(1).asFloat64,3),
-                       round(response_bottle.get(2).asFloat64,3))
+            x, y, z = (round(response_bottle.get(1).asList().get(0).asFloat64(),3), round(response_bottle.get(1).asList().get(1).asFloat64(),3),
+                       round(response_bottle.get(1).asList().get(2).asFloat64(),3))
 
             return (x, y, z)
 
@@ -114,5 +119,15 @@ class ObjectReader:
             self.action_port.write(action_bottle, response)
             print("Sending to action port cmd: {}".format(action_bottle.toString()))
 
+    def see_objects(self):
+
+        object_class_list = self.read()
+
+        objects_to_check = ["cup", "banana", "orange"]
+        for o in object_class_list:
+            if o in objects_to_check:
+                return True
+
+        return False
 
 

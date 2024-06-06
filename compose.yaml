@@ -1,14 +1,14 @@
 version: '3'
 services:
   composedocker:
-    image: summerschool:latest
+    image: docker.io/missingsignal/summerschool:latest
     container_name: ROBOTOLOGY  # Specifica il nome del container
     ports:
       - "10000:10000/tcp"
       - "10000:10000/udp"
     devices:
       - "/dev/video0:/dev/video0"
-      #- "/dev/ttyUSB0:/dev/ttyUSB0" #comment out this if you don't have plugged the iCube serial RX device 
+      - "/dev/ttyUSB0:/dev/ttyUSB0" #comment out this if you don't have plugged the iCube serial RX device 
     volumes:
       - /tmp/.X11-unix/:/tmp/.X11-unix/
       - /home/icub/Documents/hriworkshopthriss/docker/modules/objectRecognition-main:/cognitiveInteraction

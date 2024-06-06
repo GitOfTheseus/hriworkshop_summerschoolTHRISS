@@ -39,20 +39,26 @@
     </module>
 
     <module>
-        <name>interactionInterface</name>
-        <parameters></parameters>
+        <name>icubeYARP</name>
+        <parameters>--grab-pose 1.5 --press-release 10 1.0 --start --port /dev/ttyUSB0</parameters>
         <node>localhost</node>
     </module>
 
     <module>
-        <name>webcam</name>
-        <parameters></parameters>
+        <name>yarpdev</name>
+        <parameters>--device opencv_grabber --name /webcam/image:o --width 640 --height 480</parameters>
+        <node>localhost</node>
+    </module>
+
+    <module>
+        <name>yarpview</name>
+        <parameters>--name /viewer</parameters>
         <node>localhost</node>
     </module>
 
     <module>
         <name>iKinGazeCtrl</name>
-        <parameters>--robot icubSim</parameters>
+        <parameters>--context gazeboCartesianControl --from iKinGazeCtrl.ini</parameters>
         <node>localhost</node>
     </module>
 
@@ -110,18 +116,30 @@
         <to>/HRImanager/object:sim:i</to>
         <protocol>tcp</protocol>
     </connection>
+
+    <connection>
+        <from>/objectRecognition/annotated_image:o</from>
+        <to>/viewer</to>
+        <protocol>tcp</protocol>
+    </connection>
     
     <!--> ############# haptic ############# <!-->
 
     <connection>
-        <from></from>
+        <from>/icube/events:o</from>
         <to>/HRImanager/cube:event:i</to>
         <protocol>tcp</protocol>
     </connection>
 
     <connection>
-        <from></from>
+        <from>/icube/data:o</from>
         <to>/HRImanager/cube:touch:i</to>
+        <protocol>tcp</protocol>
+    </connection>
+
+    <connection>
+        <from>/HRImanager/world:rpc</from>
+        <to>/world_input_port</to>
         <protocol>tcp</protocol>
     </connection>
 

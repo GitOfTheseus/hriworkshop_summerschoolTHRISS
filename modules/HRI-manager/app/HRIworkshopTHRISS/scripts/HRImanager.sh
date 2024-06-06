@@ -144,15 +144,19 @@ hello() {
 }
 
 look_left(){
-    echo "abs -40 20 0" | yarp write ... /iKinGazeCtrl/angles:i    
+    echo "abs -10 -16 0" | yarp write ... /iKinGazeCtrl/angles:i
     go_home_human
 }
 
 look_right(){
-    echo "abs 40 20 0" | yarp write ... /iKinGazeCtrl/angles:i    
+    echo "abs 10 -16 0" | yarp write ... /iKinGazeCtrl/angles:i
     go_home_human
 }
 
+look_table(){
+    echo "abs 0 -20 0" | yarp write ... /iKinGazeCtrl/angles:i
+    go_home_human
+}
 
 
 

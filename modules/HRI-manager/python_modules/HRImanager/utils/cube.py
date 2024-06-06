@@ -22,8 +22,9 @@ class Cube:
 
         if self.event_port.getInputCount():
             event_bottle = self.event_port.read(False)
-            event = event_bottle.get(0).asString()
-            return event
+            if event_bottle is not None:
+                event = event_bottle.get(0).asString()
+                return event
 
     def process_event(self, event, object=None):
 
@@ -37,9 +38,9 @@ class Cube:
     def read_and_process(self, object=None):
 
         event = self.read_event()
-        self.process_event(event, object)
-
-        return
+        #self.process_event(event, object)
+        if event in ["grab", "pose"]:
+            return event
 
     def touch(self):
 
