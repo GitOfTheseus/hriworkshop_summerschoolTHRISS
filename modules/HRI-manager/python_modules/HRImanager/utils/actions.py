@@ -49,20 +49,17 @@ class Action:
             request_bottle.addString("3D")
             info_bottle.addFloat64(position_3D[0])
             info_bottle.addFloat64(position_3D[1])
-            #info_bottle.addFloat64(position_3D[2])
-            info_bottle.addFloat64(0)
+            info_bottle.addFloat64(position_3D[2])
+            #info_bottle.addFloat64(0)
             request_bottle.addList().copy(info_bottle)
 
             # possible good position look 3D (-1.5 -0.3 0)
 
             self.gaze_rpc_port.write(request_bottle, response_bottle)
-            yarp.delay(1.5)
+            #yarp.delay(1.5)
 
             print(f"requesting the following command: {request_bottle.toString()}. Response: {response_bottle.toString()}")
 
-    def look_table(self):
-
-        self.look((-0.8, 0, 0))
 
     def check_gaze_motion_completed(self, target):
 

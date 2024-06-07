@@ -7,14 +7,15 @@ class World:
         self.world_port = world_port
         self.objects_list = ["bowl", "Banana", "orange"]
         self.objects_coordinates = {}
+        self.original_coordinates = {}
 
         print("initialization of the world")
 
-    def get_coordinates(self):
+    def save_coordinates(self):
 
         for o in self.objects_list :
+            self.original_coordinates[o] = self.find(o)
             self.objects_coordinates[o] = self.find(o)
-        print(self.objects_coordinates)
 
     def find(self, object_category):
 
@@ -30,11 +31,11 @@ class World:
 
             self.world_port.write(request_bottle, response_bottle)
 
-            coordinates = []
+            self.objects_coordinates[object_category] = []
             for i in range(response_bottle.size()):
-                coordinates.append(round(response_bottle.get(i).asFloat64(), 2))
+                self.objects_coordinates[object_category].append(round(response_bottle.get(i).asFloat64(), 2))
 
-            return coordinates
+            return self.objects_coordinates[object_category]
 
     def move(self, object_category, coordinates):
         if self.world_port.getOutputCount():
@@ -54,20 +55,20 @@ class World:
 
     def lift(self, object_category):
 
-        if object_category == "frisbee":
-            object_category = "bowl"
-        coordinates = self.objects_coordinates[object_category][:]
+        coordinates = self.original_coordinates[object_category][:]
+
         if len(coordinates):
             coordinates[2] += 0.1
+            self.objects_coordinates[object_category] = coordinates
             self.move(object_category, coordinates)
 
     def lower(self, object_category):
-        if object_category == "frisbee":
-            object_category = "bowl"
-        coordinates = self.objects_coordinates[object_category]
+
+        coordinates = self.original_coordinates[object_category][:]
+        self.objects_coordinates[object_category] = coordinates
         self.move(object_category, coordinates)
 
-    def update_world(self, event, object_category="frisbee"):
+    def update_world(self, event, object_category="Banana"):
 
         if event == "grab":
             self.lift(object_category)

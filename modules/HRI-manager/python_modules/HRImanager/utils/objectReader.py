@@ -1,57 +1,63 @@
 import yarp
 
+def warning(msg):
+    print("\033[93m[WARNING] {}\033[00m".format(msg))
 
 class ObjectReader:
 
-    def __init__(self, obj_webcam_port, obj_sim_port, gaze_port):
+    def __init__(self, obj_in_port, gaze_port):
 
-        self.obj_webcam_port = obj_webcam_port
-        self.obj_sim_port = obj_sim_port
+        self.obj_in_port = obj_in_port
         self.gaze_port = gaze_port
 
         print("initialization of the object reader")
 
     def read(self):
 
-        if self.obj_webcam_port.getInputCount():
-            input_bottle = self.obj_webcam_port.read(False)
-            if input_bottle is not None:
-                object_class_list = []
-                for i in range(input_bottle.size()):
-                    object_class_list.append(input_bottle.get(i).asList().get(0).asList().get(1).asString())
+        if self.switch_detection_to_world():
+            if self.obj_in_port.getInputCount():
+                input_bottle = self.obj_in_port.read(False)
+                if input_bottle is not None:
+                    object_class_list = []
+                    for i in range(input_bottle.size()):
+                        object_class_list.append(input_bottle.get(i).asList().get(0).asList().get(1).asString())
 
-                return object_class_list
+                    return object_class_list
 
         return
 
     def localize(self):
 
-        if self.obj_sim_port.getInputCount():
-            input_bottle = self.obj_sim_port.read(False)
-            if input_bottle is not None:
-                object_class_dict = {}
-                for i in range(input_bottle.size()):
-                    pixel_coord = self.get_center(input_bottle.get(i).asList().get(2).asList().get(1).asList())
-                    position_3D = self.get_3D_position(pixel_coord)
-                    object_class_dict[input_bottle.get(i).asList().get(0).asList().get(1).asString()] = position_3D
+        if self.switch_detection_to_simulation():
+            if self.obj_in_port.getInputCount():
+                input_bottle = self.obj_in_port.read(False)
+                if input_bottle is not None:
+                    object_class_dict = {}
+                    for i in range(input_bottle.size()):
+                        object_coord_list = []
+                        for k in range(input_bottle.get(0).asList().get(2).asList().get(1).asList().size()):
+                            object_coord_list.append(input_bottle.get(i).asList().get(2).asList().get(1).asList().get(k).asFloat32())
+                        pixel_coord = self.get_center(object_coord_list)
+                        position_3D = self.get_3D_position(pixel_coord)
+                        object_class_dict[input_bottle.get(i).asList().get(0).asList().get(1).asString()] = position_3D
 
-                    # get 3D position with rpc port of iKinGaze e.g. get 3D mono ("left" 200 100 -0.5)
+                        # get 3D position with rpc port of iKinGaze e.g. get 3D mono ("left" 200 100 -0.5)
 
-                return object_class_dict
+                    return object_class_dict
 
         return
 
-    def focus(self, object_category="frisbee"):
+    def focus(self, object_category="banana"):
 
-        if self.obj_sim_port.getInputCount():
-            input_bottle = self.obj_sim_port.read(False)
+        if self.obj_in_port.getInputCount():
+            input_bottle = self.obj_in_port.read(False)
             if input_bottle is not None:
                 # objects in bottle are ordered according the confidence of recognition
                 for k in range(input_bottle.size()):
                     if input_bottle.get(k).asList().get(0).asList().get(1).asString() == object_category:
                         object_coord_list = []
                         for i in range(input_bottle.get(0).asList().get(2).asList().get(1).asList().size()):
-                            object_coord_list.append(input_bottle.get(0).asList().get(2).asList().get(1).asList().get(i).asFloat32())
+                            object_coord_list.append(input_bottle.get(k).asList().get(2).asList().get(1).asList().get(i).asFloat32())
                         pixel_coord = self.get_center(object_coord_list)
                         position_3D = self.get_3D_position(pixel_coord)
 
@@ -83,15 +89,17 @@ class ObjectReader:
             info_bottle.addString("left")
             info_bottle.addFloat64(pixel_coord[0])
             info_bottle.addFloat64(pixel_coord[1])
-            info_bottle.addFloat64(0) # distance was 0.5
+            info_bottle.addFloat64(0.5) # distance was 0.5
             request_bottle.addList().copy(info_bottle)
 
             self.gaze_port.write(request_bottle, response_bottle)
 
-            x, y, z = (round(response_bottle.get(1).asList().get(0).asFloat64(),3), round(response_bottle.get(1).asList().get(1).asFloat64(),3),
+            if response_bottle is not None:
+
+                x, y, z = (round(response_bottle.get(1).asList().get(0).asFloat64(),3), round(response_bottle.get(1).asList().get(1).asFloat64(),3),
                        round(response_bottle.get(1).asList().get(2).asFloat64(),3))
 
-            return (x, y, z)
+                return (x, y, z)
 
     def discretized_position(self, position_3D):
 
@@ -106,19 +114,6 @@ class ObjectReader:
 
         return position
 
-
-    def point(self, position):
-
-        if self.gaze_port.getOutputCount():
-            action_bottle = yarp.Bottle()
-            response = yarp.Bottle()
-            action_bottle.clear()
-            response.clear()
-            action_bottle.addString("exe")
-            action_bottle.addString(position)  #todo check that we have an action named as the position
-            self.action_port.write(action_bottle, response)
-            print("Sending to action port cmd: {}".format(action_bottle.toString()))
-
     def see_objects(self):
 
         object_class_list = self.read()
@@ -129,5 +124,26 @@ class ObjectReader:
                 return True
 
         return False
+
+    def switch_detection_to_world(self):
+        try:
+            yarp.Network.disconnect('/icubSim/cam/left/rgbImage:o', '/objectRecognition/image:i')
+            yarp.Network.connect('/webcam', '/objectRecognition/image:i')
+            yarp.delay(0.5)
+            return True
+        except Exception as e:
+            warning("Unable to connect to the world port with gazebo: " + str(e))
+            return False
+
+    def switch_detection_to_simulation(self):
+        try:
+            yarp.Network.disconnect('/webcam', '/objectRecognition/image:i')
+            yarp.Network.connect('/icubSim/cam/left/rgbImage:o', '/objectRecognition/image:i')
+            yarp.delay(0.5)
+            return True
+        except Exception as e:
+            warning("Unable to connect to the world port with gazebo: " + str(e))
+            return False
+
 
 

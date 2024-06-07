@@ -49,8 +49,7 @@ class HRImanager(yarp.RFModule):
         self.gaze_rpc_port = yarp.RpcClient()
         self.gaze_rpc_port.setRpcMode(True)
         self.gaze_in_port = yarp.BufferedPortBottle()
-        self.obj_webcam_in_port = yarp.BufferedPortBottle()
-        self.obj_sim_in_port = yarp.BufferedPortBottle()
+        self.obj_in_port = yarp.BufferedPortBottle()
         self.text_in_port = yarp.BufferedPortBottle()
         self.LLM_out_port = yarp.BufferedPortBottle()
         self.LLM_in_port = yarp.BufferedPortBottle()
@@ -98,31 +97,29 @@ class HRImanager(yarp.RFModule):
         self.action_rpc_port.open('/' + self.module_name + '/action:rpc')
         self.gaze_rpc_port.open('/' + self.module_name + '/gaze:rpc')
         self.gaze_in_port.open('/' + self.module_name + '/gaze:i')
-        self.obj_webcam_in_port.open('/' + self.module_name + '/object:webcam:i')
-        self.obj_sim_in_port.open('/' + self.module_name + '/object:sim:i')
+        self.obj_in_port.open('/' + self.module_name + '/objects:i')
         self.text_in_port.open('/' + self.module_name + '/text:i')
         self.LLM_out_port.open('/' + self.module_name + '/LLM:o')
         self.LLM_in_port.open('/' + self.module_name + '/LLM:i')
         self.speech_out_port.open('/' + self.module_name + '/speech:o')
         self.world_rpc_port.open('/' + self.module_name + '/world:rpc')
 
-
         self.cube = Cube(self.cube_touch_in_port, self.cube_event_in_port)
         self.action = Action(self.action_rpc_port, self.gaze_rpc_port, self.gaze_in_port, self.speech_out_port)
-        self.objectReader = ObjectReader(self.obj_webcam_in_port, self.obj_sim_in_port, self.gaze_rpc_port)
+        self.objectReader = ObjectReader(self.obj_in_port, self.gaze_rpc_port)
         self.speech = Speech(self.text_in_port, self.LLM_out_port, self.LLM_in_port)
         self.world = World(self.world_rpc_port)
 
         try:
-            yarp.Network.connect('/' + self.module_name + '/gaze:rpc', "/iKinGazeCtrl/rpc")
-            self.action.look_table()
+            yarp.Network.connect('/' + self.module_name + '/action:rpc', "/interactionInterface")
+            self.action.execute("go_home_human")
         except Exception as e:
-            error("Unable to connect to the gaze port with iKinGazeCtrl: " + str(e))
+            error("Unable to connect to the action port with interactionInterface: " + str(e))
             return False
 
         try:
             yarp.Network.connect('/' + self.module_name + '/world:rpc', "/world_input_port")
-            self.world.get_coordinates()
+            self.world.save_coordinates()
         except Exception as e:
             error("Unable to connect to the world port with gazebo: " + str(e))
             return False
@@ -145,8 +142,7 @@ class HRImanager(yarp.RFModule):
         self.action_rpc_port.interrupt()
         self.gaze_rpc_port.interrupt()
         self.gaze_in_port.interrupt()
-        self.obj_webcam_in_port.interrupt()
-        self.obj_sim_in_port.interrupt()
+        self.obj_in_port.interrupt()
         self.text_in_port.interrupt()
         self.LLM_out_port.interrupt()
         self.LLM_in_port.interrupt()
@@ -165,8 +161,7 @@ class HRImanager(yarp.RFModule):
         self.action_rpc_port.close()
         self.gaze_rpc_port.close()
         self.gaze_in_port.close()
-        self.obj_webcam_in_port.close()
-        self.obj_sim_in_port.close()
+        self.obj_in_port.close()
         self.text_in_port.close()
         self.LLM_out_port.close()
         self.LLM_in_port.close()
@@ -215,21 +210,14 @@ class HRImanager(yarp.RFModule):
 
             self.focus_position = self.objectReader.focus()
 
-            if event and self.focus_position:
+            if self.focus_position:
                 self.changeState(State.ACTING_TOWARD_ENVIRONMENT)
-            elif not self.objectReader.see_objects:
-                self.action.look_table()
-                debug("looking at the table again")
 
         elif self.current_state == State.ACTING_TOWARD_ENVIRONMENT:
 
             self.action.look(self.focus_position)
 
-            debug("motion completed")
             self.changeState(State.WAITING_FOR_STIMULI)
-
-            #if self.action.check_gaze_motion_completed(self.focus_position):
-                #pass
 
         return True
 

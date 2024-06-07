@@ -9,6 +9,7 @@ from utils.state import State
 from utils.objectReader import ObjectReader
 from utils.actions import Action
 from utils.speech import Speech
+from utils.world import World
 
 def info(msg):
     print("[INFO] {}".format(msg))
@@ -45,12 +46,13 @@ class HRImanager(yarp.RFModule):
         self.gaze_rpc_port = yarp.RpcClient()
         self.gaze_rpc_port.setRpcMode(True)
         self.gaze_in_port = yarp.BufferedPortBottle()
-        self.obj_webcam_in_port = yarp.BufferedPortBottle()
-        self.obj_sim_in_port = yarp.BufferedPortBottle()
+        self.obj_in_port = yarp.BufferedPortBottle()
         self.text_in_port = yarp.BufferedPortBottle()
         self.LLM_out_port = yarp.BufferedPortBottle()
         self.LLM_in_port = yarp.BufferedPortBottle()
         self.speech_out_port = yarp.BufferedPortBottle()
+        self.world_rpc_port = yarp.RpcClient()
+        self.world_rpc_port.setRpcMode(True)
 
         self.text = ""
         self.object_class_dict = {}
@@ -65,6 +67,7 @@ class HRImanager(yarp.RFModule):
         self.objectReader = None
         self.speech = None
         self.memory = None
+        self.world = None
 
         self.current_state = State.INITIALIZATION
 
@@ -76,13 +79,6 @@ class HRImanager(yarp.RFModule):
 
         # Module parameters
         self.module_name = rf.check("name", yarp.Value("HRImanager"), "module name (string)").asString()
-
-        self.cube = Cube(self.cube_touch_in_port, self.cube_event_in_port)
-        self.action = Action(self.action_rpc_port, self.gaze_rpc_port, self.gaze_in_port, self.speech_out_port)
-        self.objectReader = ObjectReader(self.obj_webcam_in_port, self.obj_sim_in_port, self.gaze_rpc_port)
-        self.speech = Speech(self.text_in_port, self.LLM_out_port, self.LLM_in_port)
-
-        self.current_state = State.WAITING_FOR_STIMULI
 
         # Create handle port to read message
         self.handle_port.open('/' + self.module_name)
@@ -98,12 +94,34 @@ class HRImanager(yarp.RFModule):
         self.action_rpc_port.open('/' + self.module_name + '/action:rpc')
         self.gaze_rpc_port.open('/' + self.module_name + '/gaze:rpc')
         self.gaze_in_port.open('/' + self.module_name + '/gaze:i')
-        self.obj_webcam_in_port.open('/' + self.module_name + '/object:webcam:i')
-        self.obj_sim_in_port.open('/' + self.module_name + '/object:sim:i')
+        self.obj_in_port.open('/' + self.module_name + '/objects:i')
         self.text_in_port.open('/' + self.module_name + '/text:i')
         self.LLM_out_port.open('/' + self.module_name + '/LLM:o')
         self.LLM_in_port.open('/' + self.module_name + '/LLM:i')
         self.speech_out_port.open('/' + self.module_name + '/speech:o')
+        self.world_rpc_port.open('/' + self.module_name + '/world:rpc')
+
+        self.cube = Cube(self.cube_touch_in_port, self.cube_event_in_port)
+        self.action = Action(self.action_rpc_port, self.gaze_rpc_port, self.gaze_in_port, self.speech_out_port)
+        self.objectReader = ObjectReader(self.obj_in_port, self.gaze_rpc_port)
+        self.speech = Speech(self.text_in_port, self.LLM_out_port, self.LLM_in_port)
+        self.world = World(self.world_rpc_port)
+
+        try:
+            yarp.Network.connect('/' + self.module_name + '/action:rpc', "/interactionInterface")
+            self.action.execute("go_home_human")
+        except Exception as e:
+            error("Unable to connect to the action port with interactionInterface: " + str(e))
+            return False
+
+        try:
+            yarp.Network.connect('/' + self.module_name + '/world:rpc', "/world_input_port")
+            self.world.save_coordinates()
+        except Exception as e:
+            error("Unable to connect to the world port with gazebo: " + str(e))
+            return False
+
+        self.current_state = State.WAITING_FOR_STIMULI
 
         info("Initialization complete")
 
@@ -121,12 +139,12 @@ class HRImanager(yarp.RFModule):
         self.action_rpc_port.interrupt()
         self.gaze_rpc_port.interrupt()
         self.gaze_in_port.interrupt()
-        self.obj_webcam_in_port.interrupt()
-        self.obj_sim_in_port.interrupt()
+        self.obj_in_port.interrupt()
         self.text_in_port.interrupt()
         self.LLM_out_port.interrupt()
         self.LLM_in_port.interrupt()
         self.speech_out_port.interrupt()
+        self.world_rpc_port.interrupt()
 
         return True
 
@@ -140,12 +158,12 @@ class HRImanager(yarp.RFModule):
         self.action_rpc_port.close()
         self.gaze_rpc_port.close()
         self.gaze_in_port.close()
-        self.obj_webcam_in_port.close()
-        self.obj_sim_in_port.close()
+        self.obj_in_port.close()
         self.text_in_port.close()
         self.LLM_out_port.close()
         self.LLM_in_port.close()
         self.speech_out_port.close()
+        self.world_rpc_port.close()
 
         info("Doors closed")
 
@@ -184,13 +202,14 @@ class HRImanager(yarp.RFModule):
 
             self.object_class_list = self.objectReader.read()
             if self.object_class_list:
-                self.object_class_list = [obj for obj in self.object_class_list if object != "person"]
+                self.object_class_list = [obj for obj in self.object_class_list if obj != "person"]
                 info(f"I detected the following categories of objects {self.object_class_list}")
+                if len(self.object_class_list) > 0:
 
-            self.object_class_dict = self.objectReader.localize()
+                    self.object_class_dict = self.objectReader.localize()
 
-            if self.object_class_list:
-                self.changeState(State.REASONING)
+                    if self.object_class_dict:
+                        self.changeState(State.REASONING)
 
         elif self.current_state == State.REASONING:
 
@@ -206,16 +225,15 @@ class HRImanager(yarp.RFModule):
                     self.focus_position = ()
                     self.object_position = ""
                     info(f"no {obj} in the simulated environment")
+                    self.changeState(State.WAITING_FOR_STIMULI)
 
         elif self.current_state == State.ACTING_TOWARD_ENVIRONMENT:
             
             self.action.look(self.focus_position)
-
-            pointing_motion_done = self.action.execute(f"point_{self.object_position}")
-
-            if pointing_motion_done and self.action.check_gaze_motion_completed(self.focus_position):
-                self.changeState(State.WAITING_FOR_STIMULI)
-                self.action.execute("go_home")
+            self.action.execute(f"point_{self.object_position}")
+            yarp.delay(1.5)
+            self.action.execute("go_home_human")
+            self.changeState(State.WAITING_FOR_STIMULI)
 
         return True
 

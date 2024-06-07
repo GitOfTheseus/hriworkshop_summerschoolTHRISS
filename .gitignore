@@ -2,3 +2,5 @@ modules/*/build
 .idea
 modules/HRI-manager/python_modules/HRImanager/utils/__pycache__
 logs
+build
+
