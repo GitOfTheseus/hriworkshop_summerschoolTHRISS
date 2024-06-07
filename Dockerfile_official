@@ -1,25 +1,30 @@
-FROM icubteamcode/superbuild-gazebo:v2024.02.0_sources
-#FROM icubteamcode/superbuild-gazebo:v2024.02.0_binaries
+FROM missingsignal/superbuild-gazebo-python-v2024.02.0
 
-ARG SOURCE_FOLDER=/usr/local/src/robot
-RUN command mkdir -p $SOURCE_FOLDER/cognitiveInteraction
+# # Remove useless .xml app files not required for the summer school
+# RUN rm -rf /projects/cer
+# RUN rm -rf /projects/cer-sim
+# RUN rm -rf /usr/local/share/navigation
+# RUN rm -rf /usr/local/share/yarp/applications
 
-# INSTALL PYTHON 3.10 AND MAKE IT DEFAULT
-RUN apt update
-#RUN apt install -y software-properties-common
-RUN add-apt-repository ppa:deadsnakes/ppa
-RUN apt update
-RUN apt install -y python3.10 python3.10-venv python3.10-dev
-RUN ls -la /usr/bin/python3
-RUN rm /usr/bin/python3
-RUN ln -s python3.10 /usr/bin/python3
-RUN python3 -m ensurepip --upgrade
-RUN pip3 install virtualenv
+# ARG SOURCE_FOLDER=/usr/local/src/robot
+# RUN command mkdir -p $SOURCE_FOLDER/cognitiveInteraction
 
-# RECOMPILING SUPERBUILD WITH DESIRED PYTHON VERSION
-RUN cd /projects/robotology-superbuild/build && \
-     cmake .. -D ROBOTOLOGY_USES_PYTHON=ON && \
-     make -j$(nproc) 
+# # INSTALL PYTHON 3.10 AND MAKE IT DEFAULT
+# RUN apt update
+# #RUN apt install -y software-properties-common
+# RUN add-apt-repository ppa:deadsnakes/ppa
+# RUN apt update
+# RUN apt install -y python3.10 python3.10-venv python3.10-dev
+# RUN ls -la /usr/bin/python3
+# RUN rm /usr/bin/python3
+# RUN ln -s python3.10 /usr/bin/python3
+# RUN python3 -m ensurepip --upgrade
+# RUN pip3 install virtualenv
+
+# # RECOMPILING SUPERBUILD WITH DESIRED PYTHON VERSION
+# RUN cd /projects/robotology-superbuild/build && \
+#      cmake .. -D ROBOTOLOGY_USES_PYTHON=ON && \
+#      make -j$(nproc) 
 
 # COPY GAZEBO MODULES AND WORLD TO THE CORRECT FOLDER
 COPY ./modules/gazebo/models /usr/share/gazebo-11/models
@@ -59,11 +64,11 @@ RUN  cd /usr/local/src/robot/cognitiveInteraction/HRI-manager && \
      make -j `nproc` install
 
 # (5) INSTALL Text To Speech
-# RUN  cd /usr/local/src/robot/cognitiveInteraction/HRI-manager && \
-#      mkdir build && \
-#      cd build/ && \
-#      cmake .. && \
-#      make -j `nproc` install
+RUN  cd /usr/local/src/robot/cognitiveInteraction/text2speech && \
+     mkdir build && \
+     cd build/ && \
+     cmake .. && \
+     make -j `nproc` install
 
 # (6) INSTALL Speech To Text
 RUN  cd /usr/local/src/robot/cognitiveInteraction/speech2text && \
@@ -72,11 +77,12 @@ RUN  cd /usr/local/src/robot/cognitiveInteraction/speech2text && \
      cmake .. && \
      make -j `nproc` install
 
+# (7) INSTALL the iChat
+RUN  cd /usr/local/src/robot/cognitiveInteraction/iChat && \
+     mkdir build && \
+     cd build/ && \
+     cmake .. && \
+     make -j `nproc` install
 
-# Remove useless .xml app files not required for the summer school
-RUN rm -rf /projects/cer
-RUN rm -rf /projects/cer-sim
-RUN rm -rf /usr/local/share/navigation
-RUN rm -rf /usr/local/share/yarp/applications
 
 CMD [ "bash" ]

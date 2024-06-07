@@ -1,7 +1,7 @@
 version: '3'
 services:
   composedocker:
-    image: missingsignal/summerschool:latest #just sumerschool if we use the local image
+    image: summeschool:latest #just sumerschool if we use the local image
     container_name: ROBOTOLOGY  # Specifica il nome del container
     ports:
       - "10000:10000/tcp"
@@ -21,3 +21,7 @@ services:
     stdin_open: true
     tty: true
     restart: always
+
+  # /icubSim/cam/right/rgbImage:o
+  # gazebo /usr/share/gazebo-11/worlds/workshop.world 
+  # objectRecogntion --conf_threshold 0.1 
