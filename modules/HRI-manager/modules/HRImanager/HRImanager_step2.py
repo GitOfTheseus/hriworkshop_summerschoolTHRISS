@@ -44,6 +44,7 @@ class HRImanager(yarp.RFModule):
         self.gaze_rpc_port.setRpcMode(True)
         self.obj_in_port = yarp.BufferedPortBottle()
         self.text_in_port = yarp.BufferedPortBottle()
+        self.bookmark_out_port = yarp.BufferedPortBottle()
         self.LLM_out_port = yarp.BufferedPortBottle()
         self.LLM_in_port = yarp.BufferedPortBottle()
         self.speech_out_port = yarp.BufferedPortBottle()
@@ -53,7 +54,7 @@ class HRImanager(yarp.RFModule):
         self.text = ""
         self.object_class_dict = {}
         self.object_class_list = []
-        self.focus_position = None
+        self.object_position = None
         self.object_position = ""
         self.object_category = ""
         self.text = ""
@@ -178,39 +179,32 @@ class HRImanager(yarp.RFModule):
                 self.object_class_list = [obj for obj in self.object_class_list if obj != "person"]
                 info(f"I detected the following categories of objects {self.object_class_list}")
                 if len(self.object_class_list) > 0:
+
                     self.object_class_dict = self.objectReader.localize()
 
-                    self.text = self.speech.listen()
-                    if self.text:
+                    if self.object_class_dict:
                         self.changeState(State.REASONING)
 
         elif self.current_state == State.REASONING:
 
-            self.object_category = self.speech.reason(self.text)
-            if self.object_category in self.object_class_list:
-                self.focus_position = self.object_class_dict[self.object_category]
-                self.object_position = self.objectReader.discretized_position(self.focus_position)
-                self.changeState(State.ACTING_TOWARD_ENVIRONMENT)
+            for obj in self.object_class_list:
 
-            else:
+                if obj in list(self.object_class_dict.keys()):
+                    self.object_position = self.object_class_dict[obj]
+                    self.object_direction = self.objectReader.discretized_position(self.object_position)
+                    self.changeState(State.ACTING_TOWARD_ENVIRONMENT)
+                    break
 
-                for obj in self.object_class_list:
-
-                    if obj in list(self.object_class_dict.keys()):
-                        self.focus_position = self.object_class_dict[obj]
-                        self.object_position = self.objectReader.discretized_position(self.focus_position)
-                        self.changeState(State.ACTING_TOWARD_ENVIRONMENT)
-                        break
-
-                    else:
-                        self.focus_position = ()
-                        self.object_position = ""
-                        info(f"no {obj} in the simulated environment")
+                else:
+                    self.object_position = ()
+                    self.object_direction = ""
+                    info(f"no {obj} in the simulated environment")
+                    self.changeState(State.WAITING_FOR_STIMULI)
 
         elif self.current_state == State.ACTING_TOWARD_ENVIRONMENT:
-
-            self.action.look(self.focus_position)
-            self.action.execute(f"point_{self.object_position}")
+            
+            self.action.look(self.object_position)
+            self.action.execute(f"point_{self.object_direction}")
             yarp.delay(1.5)
             self.action.execute("go_home_human")
             self.changeState(State.WAITING_FOR_STIMULI)
@@ -241,14 +235,14 @@ class HRImanager(yarp.RFModule):
         if not self.establish_connection('/objectRecognition/annotated_image:o', '/view:obj'):
             return False
 
-        # haptic
+        """# haptic
         if not self.establish_connection('/icube/events:o', '/HRImanager/cube:event:i'):
-            return False
+            return False"""
 
         if not self.establish_connection(self.world_rpc_port.getName(), '/world_input_port'):
             return False
 
-        # speech
+        """# speech
         if not self.establish_connection('/speech2text/text:o', self.text_in_port.getName()):
             return False
 
@@ -259,7 +253,7 @@ class HRImanager(yarp.RFModule):
             return False
 
         if not self.establish_connection(self.speech_out_port.getName(), "/text2speech/text:i"):
-            return False
+            return False"""
 
         # actions
         if not self.establish_connection(self.action_rpc_port.getName(), '/interactionInterface'):
@@ -267,6 +261,8 @@ class HRImanager(yarp.RFModule):
 
         if not self.establish_connection(self.gaze_rpc_port.getName(), '/iKinGazeCtrl/rpc'):
             return False
+
+        return True
 
     def establish_connection(self, port_input, port_output):
 

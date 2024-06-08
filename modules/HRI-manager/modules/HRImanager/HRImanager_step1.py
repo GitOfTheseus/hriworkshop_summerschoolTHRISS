@@ -9,7 +9,6 @@ from utils.state import State
 from utils.objectReader import ObjectReader
 from utils.actions import Action
 from utils.speech import Speech
-from utils.memory import Memory
 from utils.world import World
 
 def info(msg):
@@ -21,8 +20,17 @@ def error(msg):
 def warning(msg):
     print("\033[93m[WARNING] {}\033[00m".format(msg))
 
+def debug(msg):
+    print("\033[92m[DEBUG] {}\033[00m".format(msg))
+
 
 class HRImanager(yarp.RFModule):
+    """
+    Description:
+        Class to manage the Interaction
+    Args:
+          :
+    """
 
     def __init__(self):
         yarp.RFModule.__init__(self)
@@ -49,7 +57,7 @@ class HRImanager(yarp.RFModule):
         self.object_class_dict = {}
         self.object_class_list = []
         self.focus_position = None
-        self.object_position = ""
+        self.object_direction = ""
         self.object_category = ""
         self.text = ""
 
@@ -137,6 +145,7 @@ class HRImanager(yarp.RFModule):
 
         return True
 
+
     def respond(self, command, reply):
 
         reply.clear()
@@ -166,22 +175,26 @@ class HRImanager(yarp.RFModule):
 
     def updateModule(self):
 
-        # todo: Complete the state machine so that the robot learns the objects' name
-        # todo: after the learning, the robot says the objects' names every time it is shown a picture of them
-
         if self.current_state == State.WAITING_FOR_STIMULI:
 
-            print("waiting")
+            event = self.cube.read_and_process()
+            if event:
+                self.world.update_world(event)
+                debug(event)
 
-        elif self.current_state == State.REASONING:
+            self.object_position = self.objectReader.focus()
 
-            print("reasoning")
+            if self.object_position:
+                self.changeState(State.ACTING_TOWARD_ENVIRONMENT)
 
         elif self.current_state == State.ACTING_TOWARD_ENVIRONMENT:
-            
-            print("acting")
+
+            self.action.look(self.object_position)
+
+            self.changeState(State.WAITING_FOR_STIMULI)
 
         return True
+
 
     def changeState(self, new_state):
 
@@ -272,6 +285,7 @@ class HRImanager(yarp.RFModule):
         yarp.Network.disconnect(self.gaze_rpc_port.getName(), '/iKinGazeCtrl/rpc')
 
         return True
+
 
 
 if __name__ == '__main__':

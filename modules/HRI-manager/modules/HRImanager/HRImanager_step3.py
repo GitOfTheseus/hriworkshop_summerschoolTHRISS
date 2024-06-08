@@ -45,6 +45,7 @@ class HRImanager(yarp.RFModule):
         self.gaze_rpc_port.setRpcMode(True)
         self.obj_in_port = yarp.BufferedPortBottle()
         self.text_in_port = yarp.BufferedPortBottle()
+        self.bookmark_out_port = yarp.BufferedPortBottle()
         self.LLM_out_port = yarp.BufferedPortBottle()
         self.LLM_in_port = yarp.BufferedPortBottle()
         self.speech_out_port = yarp.BufferedPortBottle()
@@ -54,8 +55,8 @@ class HRImanager(yarp.RFModule):
         self.text = ""
         self.object_class_dict = {}
         self.object_class_list = []
-        self.focus_position = None
-        self.object_position = ""
+        self.object_position = None
+        self.object_direction = ""
         self.object_category = ""
         self.text = ""
 
@@ -84,6 +85,7 @@ class HRImanager(yarp.RFModule):
         self.gaze_rpc_port.open('/' + self.module_name + '/gaze:rpc')
         self.obj_in_port.open('/' + self.module_name + '/objects:i')
         self.text_in_port.open('/' + self.module_name + '/text:i')
+        self.bookmark_out_port('/' + self.module_name + '/bookmark:o')
         self.LLM_out_port.open('/' + self.module_name + '/LLM:o')
         self.LLM_in_port.open('/' + self.module_name + '/LLM:i')
         self.speech_out_port.open('/' + self.module_name + '/speech:o')
@@ -92,7 +94,8 @@ class HRImanager(yarp.RFModule):
         self.cube = Cube(self.cube_event_in_port)
         self.action = Action(self.action_rpc_port, self.gaze_rpc_port, self.speech_out_port)
         self.objectReader = ObjectReader(self.obj_in_port, self.gaze_rpc_port)
-        self.speech = Speech(self.text_in_port, self.LLM_out_port, self.LLM_in_port)
+        self.speech = Speech(self.text_in_port, self.bookmark_out_port, self.LLM_out_port, self.LLM_in_port)
+        self.memory = Memory()
         self.world = World(self.world_rpc_port)
 
         if not self.ports_connection():
@@ -119,6 +122,7 @@ class HRImanager(yarp.RFModule):
         self.gaze_rpc_port.interrupt()
         self.obj_in_port.interrupt()
         self.text_in_port.interrupt()
+        self.bookmark_out_port.interrupt()
         self.LLM_out_port.interrupt()
         self.LLM_in_port.interrupt()
         self.speech_out_port.interrupt()
@@ -134,6 +138,7 @@ class HRImanager(yarp.RFModule):
         self.gaze_rpc_port.close()
         self.obj_in_port.close()
         self.text_in_port.close()
+        self.bookmark_out_port.close()
         self.LLM_out_port.close()
         self.LLM_in_port.close()
         self.speech_out_port.close()
@@ -176,45 +181,41 @@ class HRImanager(yarp.RFModule):
 
             self.object_class_list = self.objectReader.read()
             if self.object_class_list:
-                self.object_class_list = [obj for obj in self.object_class_list if object != "person"]
+                self.object_class_list = [obj for obj in self.object_class_list if obj != "person"]
                 info(f"I detected the following categories of objects {self.object_class_list}")
+                if len(self.object_class_list) > 0:
+                    self.object_class_dict = self.objectReader.localize()
 
-            self.object_class_dict = self.objectReader.localize()
-
-            if self.object_class_list:
-                self.text = self.speech.listen()
-                if self.text:
-                    self.changeState(State.REASONING)
+                    self.text = self.speech.listen()
+                    if self.text:
+                        self.changeState(State.REASONING)
 
         elif self.current_state == State.REASONING:
 
-            self.object_category = self.speech.reason(self.text)
+            for obj in self.object_class_list:
 
-            if self.object_category:
-                for obj in self.object_class_list:
-                    if obj in list(self.object_class_dict.keys()):
-                        self.focus_position = self.object_class_dict[obj]
-                        self.object_position = self.objectReader.discretized_position(self.focus_position)
-                        self.memory.store(self.object_category, self.object_position)
-                        self.changeState(State.ACTING_TOWARD_ENVIRONMENT)
-                        break
+                if obj in list(self.object_class_dict.keys()):
+                    self.object_category = obj
+                    self.object_position = self.object_class_dict[obj]
+                    self.object_direction = self.objectReader.discretized_position(self.object_position)
+                    self.object_name = self.speech.reason(self.text)
+                    self.memory.store_working_memory(self.object_category, object_position=self.object_position, object_direction=self.object_direction, name=self.object_name)
+                    self.changeState(State.ACTING_TOWARD_ENVIRONMENT)
+                    break
 
-                    else:
-                        self.focus_position = ()
-                        self.object_position = ""
-                        info(f"no {obj} in the simulated environment")
+                else:
+                    self.object_position = ()
+                    self.object_direction = ""
+                    info(f"no {obj} in the simulated environment")
+                    self.changeState(State.WAITING_FOR_STIMULI)
 
         elif self.current_state == State.ACTING_TOWARD_ENVIRONMENT:
-            
-            self.action.look(self.focus_position)
 
-            pointing_motion_done = self.action.execute(f"point_{self.object_position}")
-            self.action.speak(self.object_category)
-
-            if pointing_motion_done and self.action.check_gaze_motion_completed(self.focus_position):
-                self.changeState(State.WAITING_FOR_STIMULI)
-                self.action.execute("go_home")
-                self.object_category = ""
+            self.action.look(self.memory.retrieve_information(self.object_category, 'position'))
+            self.action.execute(f"point_{self.memory.retrieve_information(self.object_category, 'direction')}")
+            yarp.delay(1.5)
+            self.action.execute("go_home_human")
+            self.changeState(State.WAITING_FOR_STIMULI)
 
         return True
 
@@ -250,13 +251,16 @@ class HRImanager(yarp.RFModule):
             return False
 
         # speech
+        if not self.establish_connection(self.bookmark_out_port.getName(), '/speech2text/bookmark:i'):
+            return False
+
         if not self.establish_connection('/speech2text/text:o', self.text_in_port.getName()):
             return False
 
-        if not self.establish_connection(self.LLM_out_port.getName(), '/LLMagent/text:i'):
+        if not self.establish_connection(self.LLM_out_port.getName(), '/iChat/text:i'):
             return False
 
-        if not self.establish_connection('/LLMagent/answer:o', self.LLM_in_port.getName()):
+        if not self.establish_connection('/iChat/answer:o', self.LLM_in_port.getName()):
             return False
 
         if not self.establish_connection(self.speech_out_port.getName(), "/text2speech/text:i"):
@@ -297,9 +301,10 @@ class HRImanager(yarp.RFModule):
         yarp.Network.disconnect(self.world_rpc_port.getName(), '/world_input_port')
 
         # speech
+        yarp.Network.disconnect(self.bookmark_out_port.getName(), '/speech2text/bookmark:i')
         yarp.Network.disconnect('/speech2text/text:o', self.text_in_port.getName())
-        yarp.Network.disconnect(self.LLM_out_port.getName(), '/LLMagent/text:i')
-        yarp.Network.disconnect('/LLMagent/answer:o', self.LLM_in_port.getName())
+        yarp.Network.disconnect(self.LLM_out_port.getName(), '/iChat/text:i')
+        yarp.Network.disconnect('/iChat/answer:o', self.LLM_in_port.getName())
         yarp.Network.disconnect(self.speech_out_port.getName(), "/text2speech/text:i")
 
         # actions
@@ -307,6 +312,7 @@ class HRImanager(yarp.RFModule):
         yarp.Network.disconnect(self.gaze_rpc_port.getName(), '/iKinGazeCtrl/rpc')
 
         return True
+
 
 if __name__ == '__main__':
 

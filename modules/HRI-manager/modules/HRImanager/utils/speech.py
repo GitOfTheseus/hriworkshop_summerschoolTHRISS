@@ -2,9 +2,10 @@ import yarp
 
 class Speech:
 
-    def __init__(self, text_in_port, LLM_out_port, LLM_in_port):
+    def __init__(self, text_in_port, bookmark_out_port, LLM_out_port, LLM_in_port):
 
         self.text_in_port = text_in_port
+        self.bookmark_out_port = bookmark_out_port
         self.LLM_out_port = LLM_out_port
         self.LLM_in_port = LLM_in_port
 
@@ -17,6 +18,14 @@ class Speech:
             text = speech_bottle.get(0).asString()
 
             return text
+
+    def trigger_listener(self):
+
+        if self.bookmark_out_port.getOutputCount():
+            write_bottle = yarp.Bottle()
+            write_bottle.clear()
+            write_bottle.addInt8(1)
+            self.bookmark_out_port.write(write_bottle)
 
     def reason(self, text):
 
