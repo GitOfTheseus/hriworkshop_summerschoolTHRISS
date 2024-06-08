@@ -37,15 +37,11 @@ class HRImanager(yarp.RFModule):
         self.handle_port = None
 
         # Define port
-        self.bottle_in_port = yarp.BufferedPortBottle()
-        self.bottle_out_port = yarp.BufferedPortBottle()
-        self.cube_touch_in_port = yarp.BufferedPortBottle()
         self.cube_event_in_port = yarp.BufferedPortBottle()
         self.action_rpc_port = yarp.RpcClient()
         self.action_rpc_port.setRpcMode(True)
         self.gaze_rpc_port = yarp.RpcClient()
         self.gaze_rpc_port.setRpcMode(True)
-        self.gaze_in_port = yarp.BufferedPortBottle()
         self.obj_in_port = yarp.BufferedPortBottle()
         self.text_in_port = yarp.BufferedPortBottle()
         self.LLM_out_port = yarp.BufferedPortBottle()
@@ -82,18 +78,9 @@ class HRImanager(yarp.RFModule):
 
         # Create handle port to read message
         self.handle_port.open('/' + self.module_name)
-        # create bottle reader port
-        self.bottle_in_port.open('/' + self.module_name + '/bottle:i')
-        # create bottle writer port
-        self.bottle_out_port.open('/' + self.module_name + '/bottle:o')
-        # create cube reader port for touch
-        self.cube_touch_in_port.open('/' + self.module_name + '/cube:touch:i')
-        # create cube reader port for actions
         self.cube_event_in_port.open('/' + self.module_name + '/cube:event:i')
-        # create object reader port
         self.action_rpc_port.open('/' + self.module_name + '/action:rpc')
         self.gaze_rpc_port.open('/' + self.module_name + '/gaze:rpc')
-        self.gaze_in_port.open('/' + self.module_name + '/gaze:i')
         self.obj_in_port.open('/' + self.module_name + '/objects:i')
         self.text_in_port.open('/' + self.module_name + '/text:i')
         self.LLM_out_port.open('/' + self.module_name + '/LLM:o')
@@ -101,26 +88,18 @@ class HRImanager(yarp.RFModule):
         self.speech_out_port.open('/' + self.module_name + '/speech:o')
         self.world_rpc_port.open('/' + self.module_name + '/world:rpc')
 
-        self.cube = Cube(self.cube_touch_in_port, self.cube_event_in_port)
-        self.action = Action(self.action_rpc_port, self.gaze_rpc_port, self.gaze_in_port, self.speech_out_port)
+        self.cube = Cube(self.cube_event_in_port)
+        self.action = Action(self.action_rpc_port, self.gaze_rpc_port, self.speech_out_port)
         self.objectReader = ObjectReader(self.obj_in_port, self.gaze_rpc_port)
         self.speech = Speech(self.text_in_port, self.LLM_out_port, self.LLM_in_port)
         self.world = World(self.world_rpc_port)
 
-        try:
-            yarp.Network.connect('/' + self.module_name + '/action:rpc', "/interactionInterface")
-            self.action.execute("go_home_human")
-        except Exception as e:
-            error("Unable to connect to the action port with interactionInterface: " + str(e))
+        if not self.ports_connection():
+            error("exiting for problems in port connections")
             return False
 
-        try:
-            yarp.Network.connect('/' + self.module_name + '/world:rpc', "/world_input_port")
-            self.world.save_coordinates()
-        except Exception as e:
-            error("Unable to connect to the world port with gazebo: " + str(e))
-            return False
-
+        self.action.execute("go_home_human")
+        self.world.save_coordinates()
         self.current_state = State.WAITING_FOR_STIMULI
 
         info("Initialization complete")
@@ -129,16 +108,14 @@ class HRImanager(yarp.RFModule):
 
     def interruptModule(self):
 
+        self.ports_disconnection()
+
         info("Stopping the module")
 
         self.handle_port.interrupt()
-        self.bottle_in_port.interrupt()
-        self.bottle_out_port.interrupt()
-        self.cube_touch_in_port.interrupt()
         self.cube_event_in_port.interrupt()
         self.action_rpc_port.interrupt()
         self.gaze_rpc_port.interrupt()
-        self.gaze_in_port.interrupt()
         self.obj_in_port.interrupt()
         self.text_in_port.interrupt()
         self.LLM_out_port.interrupt()
@@ -151,13 +128,9 @@ class HRImanager(yarp.RFModule):
     def close(self):
 
         self.handle_port.close()
-        self.bottle_in_port.close()
-        self.bottle_out_port.close()
-        self.cube_touch_in_port.close()
         self.cube_event_in_port.close()
         self.action_rpc_port.close()
         self.gaze_rpc_port.close()
-        self.gaze_in_port.close()
         self.obj_in_port.close()
         self.text_in_port.close()
         self.LLM_out_port.close()
@@ -242,6 +215,92 @@ class HRImanager(yarp.RFModule):
         self.current_state = new_state
 
         return
+
+    def ports_connection(self):
+
+        # vision
+        if not self.establish_connection('/icubSim/cam/left/rgbImage:o', '/objectRecognition/image:i'):
+            return False
+
+        if not self.establish_connection('/objectRecognition/objects:o', self.obj_in_port.getName()):
+            return False
+
+        if not self.establish_connection('/webcam', '/view:webcam'):
+            return False
+
+        if not self.establish_connection('/icubSim/cam/left/rgbImage:o', '/view:sim'):
+            return False
+
+        if not self.establish_connection('/objectRecognition/annotated_image:o', '/view:obj'):
+            return False
+
+        """# haptic
+        if not self.establish_connection('/icube/events:o', '/HRImanager/cube:event:i'):
+            return False"""
+
+        if not self.establish_connection(self.world_rpc_port.getName(), '/world_input_port'):
+            return False
+
+        """# speech
+        if not self.establish_connection('/speech2text/text:o', self.text_in_port.getName()):
+            return False
+
+        if not self.establish_connection(self.LLM_out_port.getName(), '/LLMagent/text:i'):
+            return False
+
+        if not self.establish_connection('/LLMagent/answer:o', self.LLM_in_port.getName()):
+            return False
+
+        if not self.establish_connection(self.speech_out_port.getName(), "/text2speech/text:i"):
+            return False"""
+
+        # actions
+        if not self.establish_connection(self.action_rpc_port.getName(), '/interactionInterface'):
+            return False
+
+        if not self.establish_connection(self.gaze_rpc_port.getName(), '/iKinGazeCtrl/rpc'):
+            return False
+
+        return True
+
+    def establish_connection(self, port_input, port_output):
+
+        if yarp.Network.exists(port_input):
+            if yarp.Network.exists(port_output):
+                yarp.Network.connect(port_input, port_output)
+                return True
+            else:
+                warning(f"check for correct opening of module {port_output.split('/')[1]}")
+                error(f"{port_output} does not exist")
+                return False
+        else:
+            warning(f"check for correct opening of module {port_input.split('/')[1]}")
+            error(f"{port_input} does not exist")
+            return False
+
+    def ports_disconnection(self):
+
+        # vision
+        yarp.Network.disconnect('/icubSim/cam/left/rgbImage:o', '/objectRecognition/image:i')
+        yarp.Network.disconnect('/webcam', '/objectRecognition/image:i')
+        yarp.Network.disconnect('/objectRecognition/objects:o', self.obj_in_port.getName())
+
+
+        # haptic
+        yarp.Network.disconnect('/icube/events:o', '/HRImanager/cube:event:i')
+        yarp.Network.disconnect(self.world_rpc_port.getName(), '/world_input_port')
+
+        # speech
+        yarp.Network.disconnect('/speech2text/text:o', self.text_in_port.getName())
+        yarp.Network.disconnect(self.LLM_out_port.getName(), '/LLMagent/text:i')
+        yarp.Network.disconnect('/LLMagent/answer:o', self.LLM_in_port.getName())
+        yarp.Network.disconnect(self.speech_out_port.getName(), "/text2speech/text:i")
+
+        # actions
+        yarp.Network.disconnect(self.action_rpc_port.getName(), '/interactionInterface')
+        yarp.Network.disconnect(self.gaze_rpc_port.getName(), '/iKinGazeCtrl/rpc')
+
+        return True
 
 
 if __name__ == '__main__':

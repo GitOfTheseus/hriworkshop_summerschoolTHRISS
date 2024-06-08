@@ -5,18 +5,11 @@ import yarp
 
 class Cube:
 
-    def __init__(self, touch_port, event_port):
+    def __init__(self, event_port):
 
-        self.touch_port = touch_port
         self.event_port = event_port
 
         print("initialization of the cube processor")
-
-
-    def read_touch(self):
-        if self.touch_port.getInputCount():
-            touch_bottle = self.touch_port.read(False)
-            # process touch_bottle
 
     def read_event(self):
 
@@ -26,7 +19,7 @@ class Cube:
                 event = event_bottle.get(0).asString()
                 return event
 
-    def process_event(self, event, object=None):
+    def process_event(self, event, object_category=None):
 
         if event == "grab":
             print(event)
@@ -35,15 +28,9 @@ class Cube:
             print(event)
             # todo lay the object down on the table (if object is not None, lay that object down)
 
-    def read_and_process(self, object=None):
+    def read_and_process(self, object_category=None):
 
         event = self.read_event()
-        #self.process_event(event, object)
+        #self.process_event(event, object_category)
         if event in ["grab", "pose"]:
             return event
-
-    def touch(self):
-
-        print("touch")
-
-        return

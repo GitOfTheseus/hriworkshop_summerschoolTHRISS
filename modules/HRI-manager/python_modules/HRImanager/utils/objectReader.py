@@ -105,9 +105,9 @@ class ObjectReader:
 
         y = position_3D[1]
 
-        if y < -0.2:
+        if y < -0.1:
             position = "left"
-        elif y > 0.2:
+        elif y > 0.1:
             position = "right"
         else:   # (-0.2 <= y <= 0.2)
             position = "front"
