@@ -1,4 +1,3 @@
-import yarp
 import json
 
 class Memory:
@@ -10,9 +9,14 @@ class Memory:
 
     def store_working_memory(self, object_category, object_position=None, object_direction="", name=""):
 
+        self.working_memory[object_category] = {}
         self.working_memory[object_category]['position'] = object_position
         self.working_memory[object_category]['direction'] = object_direction
         self.working_memory[object_category]['name'] = name
+
+    def show_working_memory(self):
+
+        return self.working_memory
 
     def retrieve_information(self, object_category, information='position'):
 
@@ -29,8 +33,8 @@ class Memory:
         try: 
             for obj, info in self.working_memory.items():
                 if info[type_info_known] == info_known:
-                    if obj[type_info_unknown]:
-                        return obj[type_info_unknown]
+                    if info[type_info_unknown]:
+                        return info[type_info_unknown]
         except:
             print("\033[93m[WARNING] {}\033[00m".format(f"problems in retrieving info in memory"))
 
@@ -43,6 +47,8 @@ class Memory:
         try:
             with open(filename, "r") as f:
                 self.working_memory = json.load(f)
+
+                print("long term memory retrieved and used in the working memory: ", self.working_memory)
 
         except FileNotFoundError:
 

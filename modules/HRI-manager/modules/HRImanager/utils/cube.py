@@ -1,7 +1,3 @@
-import cv2
-import os
-import yarp
-
 
 class Cube:
 

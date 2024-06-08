@@ -15,16 +15,17 @@ class Speech:
 
         if self.text_in_port.getInputCount():
             speech_bottle = self.text_in_port.read(False)
-            text = speech_bottle.get(0).asString()
+            if speech_bottle is not None:
+                text = speech_bottle.get(0).asString()
 
-            return text
+                return text
 
     def trigger_listener(self):
 
         if self.bookmark_out_port.getOutputCount():
             write_bottle = yarp.Bottle()
             write_bottle.clear()
-            write_bottle.addInt8(1)
+            write_bottle.addInt64(4)
             self.bookmark_out_port.write(write_bottle)
 
     def reason(self, text):
@@ -34,15 +35,22 @@ class Speech:
             write_bottle = yarp.Bottle()
             write_bottle.clear()
             write_bottle.addString(text)
+            self.LLM_out_port.write(write_bottle)
 
             """
             the LLM is provided with this prompt: "you are a child who has to repeat the names of objects I show you. Just repeat one word."
             """
 
             read_bottle = self.LLM_in_port.read(True)
-            category = read_bottle.get(0).asString()
+            if read_bottle is not None:
+                category = read_bottle.get(0).asString()
+                category = category.replace(" ", "")
+                print(category)
 
-            return category
+                return category
+
+            else:
+                return ""
 
 
 

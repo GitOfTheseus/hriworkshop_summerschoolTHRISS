@@ -2,21 +2,29 @@
     <name>workshopTHRISS</name>
 
     <authors>
-        <author email="carlo.mazzola@iit.it"> Carlo Mazzola </author> 
+        <author email="luca.garello@iit.it"> Luca Garello</author>
+        <author email="carlo.mazzola@iit.it"> Carlo Mazzola</author>
     </authors>
 
     <!--> #############  ############# ############# <!-->
     <!--> #############     Modules    ############# <!-->
     <!--> #############  ############# ############# <!-->
-    <module>
-        <name>gazebo</name>
-        <parameters>'/usr/share/gazebo-11/worlds/workshop.world'</parameters>
-        <node>localhost</node>
-    </module>
 
     <module>
         <name>HRImanager</name>
         <parameters></parameters>
+        <node>localhost</node>
+    </module>
+
+    <module>
+        <name>gazebo</name>
+        <parameters>/usr/share/gazebo-11/worlds/workshopV2.world</parameters>
+        <node>localhost</node>
+    </module>
+
+    <module>
+        <name>icubeYARP</name>
+        <parameters>--grab-pose 1.5 --press-release 10 1.0 --start --port /dev/ttyUSB0</parameters>
         <node>localhost</node>
     </module>
 
@@ -27,7 +35,7 @@
     </module>
 
     <module>
-        <name>speechProcessing</name>
+        <name>speech2text</name>
         <parameters>--model tiny</parameters>
         <node>localhost</node>
     </module>
@@ -39,12 +47,6 @@
     </module>
 
     <module>
-        <name>icubeYARP</name>
-        <parameters>--grab-pose 1.5 --press-release 10 1.0 --start --port /dev/ttyUSB0</parameters>
-        <node>localhost</node>
-    </module>
-
-    <module>
         <name>yarpdev</name>
         <parameters>--device opencv_grabber --name /webcam/image:o --width 640 --height 480</parameters>
         <node>localhost</node>
@@ -52,7 +54,19 @@
 
     <module>
         <name>yarpview</name>
-        <parameters>--name /viewer</parameters>
+        <parameters>--name /view:sim</parameters>
+        <node>localhost</node>
+    </module>
+
+    <module>
+        <name>yarpview</name>
+        <parameters>--name /view:webcam</parameters>
+        <node>localhost</node>
+    </module>
+
+    <module>
+        <name>yarpview</name>
+        <parameters>--name /view:obj</parameters>
         <node>localhost</node>
     </module>
 
@@ -92,12 +106,6 @@
     
     
     <!--> ############# vision ############# <!-->
-    
-    <connection>
-	<from>/webcam/image:o</from>
-	<to>/objectRecognition/image:i</to>
-	<protocol>tcp</protocol>
-    </connection>
 
     <connection>
 	<from>/icubSim/cam/left/rgbImage:o</from>
@@ -107,19 +115,25 @@
 
     <connection>
         <from>/objectRecognition/objects:o</from>
-        <to>/HRImanager/object:wecam:i</to>
+        <to>/HRImanager/objects:i</to>
         <protocol>tcp</protocol>
     </connection>
 
     <connection>
-        <from>/objectRecognition/objects:o</from>
-        <to>/HRImanager/object:sim:i</to>
+        <from>/webcam</from>
+        <to>/view:webcam</to>
+        <protocol>tcp</protocol>
+    </connection>
+
+    <connection>
+        <from>/icubSim/cam/left/rgbImage:o</from>
+        <to>/view:sim</to>
         <protocol>tcp</protocol>
     </connection>
 
     <connection>
         <from>/objectRecognition/annotated_image:o</from>
-        <to>/viewer</to>
+        <to>/view:obj</to>
         <protocol>tcp</protocol>
     </connection>
     
@@ -132,12 +146,6 @@
     </connection>
 
     <connection>
-        <from>/icube/data:o</from>
-        <to>/HRImanager/cube:touch:i</to>
-        <protocol>tcp</protocol>
-    </connection>
-
-    <connection>
         <from>/HRImanager/world:rpc</from>
         <to>/world_input_port</to>
         <protocol>tcp</protocol>
@@ -146,20 +154,20 @@
     <!--> ############# speech ############# <!-->
     
     <connection>
-        <from>/speechProcessing/text:o</from>
+        <from>/speech2text/text:o</from>
         <to>/HRImanager/text:i</to>
         <protocol>tcp</protocol>
     </connection>
     
     <connection>
         <from>/HRImanager/LLM:o</from>
-        <to>/LLMagent/text:i</to>
+        <to>/iChat/text:i</to>
         <protocol>tcp</protocol>
     </connection>  
     
     <connection>
         <from>/LLMagent/answer:o</from>
-        <to>/HRImanager/LLM:i</to>
+        <to>/iChat/LLM:i</to>
         <protocol>tcp</protocol>
     </connection>
 

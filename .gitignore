@@ -3,4 +3,4 @@ modules/*/build
 modules/HRI-manager/python_modules/HRImanager/utils/__pycache__
 logs
 build
-
+modules/HRI-manager/modules/HRImanager/object_info.json

@@ -59,11 +59,12 @@ class Action:
 
             print(f"requesting the following command: {request_bottle.toString()}. Response: {response_bottle.toString()}")
 
-    def speak(self, object_category):
+    def speak(self, name):
 
         if self.speech_out_port.getOutputCount():
             write_bottle = yarp.Bottle()
             write_bottle.clear()
-            write_bottle.addString(object_category)
+            write_bottle.addString(name)
+            self.speech_out_port.write(write_bottle)
 
 

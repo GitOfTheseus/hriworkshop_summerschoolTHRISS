@@ -1,15 +1,14 @@
 import yarp
-import os
 import sys
-#import cv2
-from enum import Enum
 
 from utils.cube import Cube
 from utils.state import State
 from utils.objectReader import ObjectReader
 from utils.actions import Action
 from utils.speech import Speech
+from utils.memory import Memory
 from utils.world import World
+
 
 def info(msg):
     print("[INFO] {}".format(msg))
@@ -47,16 +46,17 @@ class HRImanager(yarp.RFModule):
         self.gaze_rpc_port.setRpcMode(True)
         self.obj_in_port = yarp.BufferedPortBottle()
         self.text_in_port = yarp.BufferedPortBottle()
-        self.LLM_out_port = yarp.BufferedPortBottle()
+        self.bookmark_out_port = yarp.Port()
+        self.LLM_out_port = yarp.Port()
         self.LLM_in_port = yarp.BufferedPortBottle()
-        self.speech_out_port = yarp.BufferedPortBottle()
+        self.speech_out_port = yarp.Port()
         self.world_rpc_port = yarp.RpcClient()
         self.world_rpc_port.setRpcMode(True)
 
         self.text = ""
         self.object_class_dict = {}
         self.object_class_list = []
-        self.focus_position = None
+        self.object_position = None
         self.object_direction = ""
         self.object_category = ""
         self.text = ""
@@ -76,33 +76,39 @@ class HRImanager(yarp.RFModule):
         self.handle_port = yarp.Port()
         self.attach(self.handle_port)
 
-        # Module parameters
+        # Module name
         self.module_name = rf.check("name", yarp.Value("HRImanager"), "module name (string)").asString()
 
-        # Create handle port to read message
+        # Create input output and rpc ports and give them names
         self.handle_port.open('/' + self.module_name)
         self.cube_event_in_port.open('/' + self.module_name + '/cube:event:i')
         self.action_rpc_port.open('/' + self.module_name + '/action:rpc')
         self.gaze_rpc_port.open('/' + self.module_name + '/gaze:rpc')
         self.obj_in_port.open('/' + self.module_name + '/objects:i')
         self.text_in_port.open('/' + self.module_name + '/text:i')
+        self.bookmark_out_port.open('/' + self.module_name + '/bookmark:o')
         self.LLM_out_port.open('/' + self.module_name + '/LLM:o')
         self.LLM_in_port.open('/' + self.module_name + '/LLM:i')
         self.speech_out_port.open('/' + self.module_name + '/speech:o')
         self.world_rpc_port.open('/' + self.module_name + '/world:rpc')
 
+        # create objects to manage the different parts of the architecture
         self.cube = Cube(self.cube_event_in_port)
         self.action = Action(self.action_rpc_port, self.gaze_rpc_port, self.speech_out_port)
         self.objectReader = ObjectReader(self.obj_in_port, self.gaze_rpc_port)
-        self.speech = Speech(self.text_in_port, self.LLM_out_port, self.LLM_in_port)
+        self.speech = Speech(self.text_in_port, self.bookmark_out_port, self.LLM_out_port, self.LLM_in_port)
+        self.memory = Memory()
         self.world = World(self.world_rpc_port)
 
+        # connect ports
         if not self.ports_connection():
             error("exiting for problems in port connections")
             return False
 
+        # final configuration before starting the thread
         self.action.execute("go_home_human")
         self.world.save_coordinates()
+        self.memory.retrieve_long_term_memory()
         self.current_state = State.WAITING_FOR_STIMULI
 
         info("Initialization complete")
@@ -121,6 +127,7 @@ class HRImanager(yarp.RFModule):
         self.gaze_rpc_port.interrupt()
         self.obj_in_port.interrupt()
         self.text_in_port.interrupt()
+        self.bookmark_out_port.interrupt()
         self.LLM_out_port.interrupt()
         self.LLM_in_port.interrupt()
         self.speech_out_port.interrupt()
@@ -136,6 +143,7 @@ class HRImanager(yarp.RFModule):
         self.gaze_rpc_port.close()
         self.obj_in_port.close()
         self.text_in_port.close()
+        self.bookmark_out_port.close()
         self.LLM_out_port.close()
         self.LLM_in_port.close()
         self.speech_out_port.close()
@@ -228,17 +236,20 @@ class HRImanager(yarp.RFModule):
             return False
 
         # speech
+        """if not self.establish_connection(self.bookmark_out_port.getName(), '/speech2text/bookmark:i'):
+            return False
+
         if not self.establish_connection('/speech2text/text:o', self.text_in_port.getName()):
             return False
 
-        if not self.establish_connection(self.LLM_out_port.getName(), '/LLMagent/text:i'):
+        if not self.establish_connection(self.LLM_out_port.getName(), '/iChat/question:i'):
             return False
 
-        if not self.establish_connection('/LLMagent/answer:o', self.LLM_in_port.getName()):
+        if not self.establish_connection('/iChat/answer:o', self.LLM_in_port.getName()):
             return False
 
         if not self.establish_connection(self.speech_out_port.getName(), "/text2speech/text:i"):
-            return False
+            return False"""
 
         # actions
         if not self.establish_connection(self.action_rpc_port.getName(), '/interactionInterface'):
@@ -246,6 +257,8 @@ class HRImanager(yarp.RFModule):
 
         if not self.establish_connection(self.gaze_rpc_port.getName(), '/iKinGazeCtrl/rpc'):
             return False
+
+        return True
 
     def establish_connection(self, port_input, port_output):
 
@@ -269,15 +282,15 @@ class HRImanager(yarp.RFModule):
         yarp.Network.disconnect('/webcam', '/objectRecognition/image:i')
         yarp.Network.disconnect('/objectRecognition/objects:o', self.obj_in_port.getName())
 
-
         # haptic
         yarp.Network.disconnect('/icube/events:o', '/HRImanager/cube:event:i')
         yarp.Network.disconnect(self.world_rpc_port.getName(), '/world_input_port')
 
         # speech
+        yarp.Network.disconnect(self.bookmark_out_port.getName(), '/speech2text/bookmark:i')
         yarp.Network.disconnect('/speech2text/text:o', self.text_in_port.getName())
-        yarp.Network.disconnect(self.LLM_out_port.getName(), '/LLMagent/text:i')
-        yarp.Network.disconnect('/LLMagent/answer:o', self.LLM_in_port.getName())
+        yarp.Network.disconnect(self.LLM_out_port.getName(), '/iChat/question:i')
+        yarp.Network.disconnect('/iChat/answer:o', self.LLM_in_port.getName())
         yarp.Network.disconnect(self.speech_out_port.getName(), "/text2speech/text:i")
 
         # actions
@@ -285,7 +298,6 @@ class HRImanager(yarp.RFModule):
         yarp.Network.disconnect(self.gaze_rpc_port.getName(), '/iKinGazeCtrl/rpc')
 
         return True
-
 
 
 if __name__ == '__main__':
