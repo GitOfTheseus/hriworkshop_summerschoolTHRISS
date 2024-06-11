@@ -1,28 +1,65 @@
-version: '3'
+version: '3.7' # Use 3.7 or later for deploy.resources support
 services:
   composedocker:
-    image: summerschool:latest #just sumerschool if we use the local image
+    image: summerschool:latest # just sumerschool if we use the local image
     container_name: ROBOTOLOGY  # Specifica il nome del container
     ports:
       - "10000:10000/tcp"
       - "10000:10000/udp"
     devices:
-      #add camera
+      # add camera
       - "/dev/video1:/dev/video1"
-      #add microphone
+      # add microphone
       - "/dev/snd:/dev/snd"
-      #export mic preferences
-      #- "/dev/ttyUSB0:/dev/ttyUSB0" #comment out this if you don't have plugged the iCube serial RX device 
+    
     volumes:
       - /tmp/.X11-unix/:/tmp/.X11-unix/
       - /etc/asound.conf:/etc/asound.conf 
-      #- /home/icub/.gazebo/models:/usr/local/share/gazebo/models
-      #- /usr/share/gazebo-11/models:/usr/share/gazebo-11/models #usr/local/share/gazebo/worlds
+
     environment:
       - DISPLAY=$DISPLAY
     stdin_open: true
     tty: true
     restart: always
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - capabilities: [gpu]
+    # runtime: nvidia # Use the NVIDIA runtime
+
+
+# version: '3'
+# services:
+#   composedocker:
+#     image: summerschool:latest #just sumerschool if we use the local image
+#     container_name: ROBOTOLOGY  # Specifica il nome del container
+#     ports:
+#       - "10000:10000/tcp"
+#       - "10000:10000/udp"
+#     devices:
+#       #add camera
+#       - "/dev/video1:/dev/video1"
+#       #add microphone
+#       - "/dev/snd:/dev/snd"
+#       #export mic preferences
+#       #- "/dev/ttyUSB0:/dev/ttyUSB0" #comment out this if you don't have plugged the iCube serial RX device 
+#       - driver: nvidia
+#         count: 1
+#         capabilities: [gpu]
+#     volumes:
+#       - /tmp/.X11-unix/:/tmp/.X11-unix/
+#       - /etc/asound.conf:/etc/asound.conf 
+#       #- /home/icub/.gazebo/models:/usr/local/share/gazebo/models
+#       #- /usr/share/gazebo-11/models:/usr/share/gazebo-11/models #usr/local/share/gazebo/worlds
+
+
+
+#     environment:
+#       - DISPLAY=$DISPLAY
+#     stdin_open: true
+#     tty: true
+#     restart: always
 
   # /icubSim/cam/right/rgbImage:o
   # gazebo /usr/share/gazebo-11/worlds/workshop.world 

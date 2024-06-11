@@ -142,9 +142,9 @@ class Speech2textModule(yarp.RFModule):
         # device = "cuda" if torch.cuda.is_available() else "cpu"
 
         # if the model is distil (X6 faster than original), load it from huggingface hub
-        if self.model == "large-distil":
+        if self.model == "small-distil":
             self.model = hf_hub_download(
-                repo_id="distil-whisper/distil-large-v2", filename="original-model.bin"
+                repo_id="distil-whisper/distil-small.en", filename="original-model.bin"
             )
         # else:
         #     self.model = whisper.load_model(self.model_size, device=device)
@@ -231,9 +231,11 @@ class Speech2textModule(yarp.RFModule):
                         audio = self.r.listen(source)
                         #print("AUDIO CHUNK RECORDED!")
                         try:
-                            text = self.r.recognize_whisper(
-                                audio, model=self.model, language=self.language
-                            )
+                            text = self.r.recognize_google(audio, language="en-EN")
+
+                            # text = self.r.recognize_whisper(
+                            #     audio, model=self.model, language=self.language
+                            # )
                             print("I heard:", text)
                             self.send_bottle(text)
                             if self.save_file:
