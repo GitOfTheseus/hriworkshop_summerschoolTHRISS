@@ -132,20 +132,20 @@ class Speech2textModule(yarp.RFModule):
         else:
             self.microphone = YARP_Microphone()
 
-        # check that .en models are not run with other languages
-        if self.model[-3:] == ".en":
-            if self.language != "english":
-                error(".en models are only available for english language")
-                return False
+        # # check that .en models are not run with other languages
+        # if self.model[-3:] == ".en":
+        #     if self.language != "english":
+        #         error(".en models are only available for english language")
+        #         return False
 
-        # Set inference device
-        # device = "cuda" if torch.cuda.is_available() else "cpu"
+        # # Set inference device
+        # # device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        # if the model is distil (X6 faster than original), load it from huggingface hub
-        if self.model == "small-distil":
-            self.model = hf_hub_download(
-                repo_id="distil-whisper/distil-small.en", filename="original-model.bin"
-            )
+        # # if the model is distil (X6 faster than original), load it from huggingface hub
+        # if self.model == "small-distil":
+        #     self.model = hf_hub_download(
+        #         repo_id="distil-whisper/distil-small.en", filename="original-model.bin"
+        #     )
         # else:
         #     self.model = whisper.load_model(self.model_size, device=device)
 
