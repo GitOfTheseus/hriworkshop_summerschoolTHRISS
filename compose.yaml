@@ -1,7 +1,7 @@
 version: '3'
 services:
   composedocker:
-    image: summeschool:latest #just sumerschool if we use the local image
+    image: summerschool:latest #just sumerschool if we use the local image
     container_name: ROBOTOLOGY  # Specifica il nome del container
     ports:
       - "10000:10000/tcp"
@@ -11,9 +11,11 @@ services:
       - "/dev/video1:/dev/video1"
       #add microphone
       - "/dev/snd:/dev/snd"
+      #export mic preferences
       #- "/dev/ttyUSB0:/dev/ttyUSB0" #comment out this if you don't have plugged the iCube serial RX device 
     volumes:
       - /tmp/.X11-unix/:/tmp/.X11-unix/
+      - /etc/asound.conf:/etc/asound.conf 
       #- /home/icub/.gazebo/models:/usr/local/share/gazebo/models
       #- /usr/share/gazebo-11/models:/usr/share/gazebo-11/models #usr/local/share/gazebo/worlds
     environment:

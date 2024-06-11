@@ -88,7 +88,7 @@ class Speech2textModule(yarp.RFModule):
             "key phrase to activate recognition e.g. 'hey robot!' (string)",
         ).asString()
         self.model = rf.check(
-            "model", yarp.Value("large-distil"), "model to use (string)"
+            "model", yarp.Value("tiny.en"), "model to use (string)"
         ).asString()
         # example of supported languages: english, italian... If NONE it will try to detect all languages
         self.language = rf.check(

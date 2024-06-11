@@ -26,13 +26,17 @@ FROM missingsignal/superbuild-gazebo-python-v2024.02.0
 #      cmake .. -D ROBOTOLOGY_USES_PYTHON=ON && \
 #      make -j$(nproc) 
 
+# RUN apt update
+# RUN apt install -y snapd
+# RUN snap install mpv
+
 # COPY GAZEBO MODULES AND WORLD TO THE CORRECT FOLDER
 COPY ./modules/gazebo/models /usr/share/gazebo-11/models
 COPY ./modules/gazebo/worlds  /usr/share/gazebo-11/worlds
 
 # # (1) INSTALL iCUBE
 RUN cd $SOURCE_FOLDER && \
-     git clone https://gitlab.iit.it/cognitiveInteraction/icube-yarp.git&& \
+     git clone https://gitlab.iit.it/cognitiveInteraction/icube-yarp.git && \
      cd icube-yarp && \
      mkdir build && \
      cd build/ && \
@@ -42,26 +46,26 @@ RUN cd $SOURCE_FOLDER && \
 # (2) INSTALL Object Detector
 COPY ./modules/ /usr/local/src/robot/cognitiveInteraction
 
-RUN  cd /usr/local/src/robot/cognitiveInteraction/objectRecognition && \
-     mkdir build && \
-     cd build/ && \
-     cmake .. && \
-     make -j `nproc` install
+# RUN  cd /usr/local/src/robot/cognitiveInteraction/objectRecognition && \
+#      mkdir build && \
+#      cd build/ && \
+#      cmake .. && \
+#      make -j `nproc` install
 
-# (3) INSTALL Interaction Demos
-RUN  cd /usr/local/src/robot/cognitiveInteraction/icub-interaction-demos && \
-     mkdir build && \
-     cd build/ && \
-     cmake .. && \
-     make -j `nproc` install
+# # (3) INSTALL Interaction Demos
+# RUN  cd /usr/local/src/robot/cognitiveInteraction/icub-interaction-demos && \
+#      mkdir build && \
+#      cd build/ && \
+#      cmake .. && \
+#      make -j `nproc` install
 
 
-# (4) INSTALL Interaction Demos
-RUN  cd /usr/local/src/robot/cognitiveInteraction/HRI-manager && \
-     mkdir build && \
-     cd build/ && \
-     cmake .. && \
-     make -j `nproc` install
+# # (4) INSTALL Interaction Demos
+# RUN  cd /usr/local/src/robot/cognitiveInteraction/HRI-manager && \
+#      mkdir build && \
+#      cd build/ && \
+#      cmake .. && \
+#      make -j `nproc` install
 
 # (5) INSTALL Text To Speech
 RUN  cd /usr/local/src/robot/cognitiveInteraction/text2speech && \
@@ -70,19 +74,19 @@ RUN  cd /usr/local/src/robot/cognitiveInteraction/text2speech && \
      cmake .. && \
      make -j `nproc` install
 
-# (6) INSTALL Speech To Text
-RUN  cd /usr/local/src/robot/cognitiveInteraction/speech2text && \
-     mkdir build && \
-     cd build/ && \
-     cmake .. && \
-     make -j `nproc` install
+# # (6) INSTALL Speech To Text
+# RUN  cd /usr/local/src/robot/cognitiveInteraction/speech2text && \
+#      mkdir build && \
+#      cd build/ && \
+#      cmake .. && \
+#      make -j `nproc` install
 
-# (7) INSTALL the iChat
-RUN  cd /usr/local/src/robot/cognitiveInteraction/iChat && \
-     mkdir build && \
-     cd build/ && \
-     cmake .. && \
-     make -j `nproc` install
+# # (7) INSTALL the iChat
+# RUN  cd /usr/local/src/robot/cognitiveInteraction/iChat && \
+#      mkdir build && \
+#      cd build/ && \
+#      cmake .. && \
+#      make -j `nproc` install
 
 
 CMD [ "bash" ]
