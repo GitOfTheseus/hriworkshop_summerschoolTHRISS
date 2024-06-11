@@ -14,18 +14,21 @@ class Speech:
     def listen(self):
 
         if self.text_in_port.getInputCount():
+            self.trigger_listener(1)
+            yarp.delay(3)
+            self.trigger_listener(0)
             speech_bottle = self.text_in_port.read(False)
             if speech_bottle is not None:
                 text = speech_bottle.get(0).asString()
 
                 return text
 
-    def trigger_listener(self):
+    def trigger_listener(self, bookmark):
 
         if self.bookmark_out_port.getOutputCount():
             write_bottle = yarp.Bottle()
             write_bottle.clear()
-            write_bottle.addInt64(4)
+            write_bottle.addInt64(bookmark)
             self.bookmark_out_port.write(write_bottle)
 
     def reason(self, text):

@@ -129,7 +129,7 @@ class ObjectReader:
         try:
             yarp.Network.disconnect('/icubSim/cam/left/rgbImage:o', '/objectRecognition/image:i')
             yarp.Network.connect('/webcam', '/objectRecognition/image:i')
-            yarp.delay(0.5)
+            yarp.delay(1)
             return True
         except Exception as e:
             warning("Unable to connect to the world port with gazebo: " + str(e))
@@ -139,7 +139,7 @@ class ObjectReader:
         try:
             yarp.Network.disconnect('/webcam', '/objectRecognition/image:i')
             yarp.Network.connect('/icubSim/cam/left/rgbImage:o', '/objectRecognition/image:i')
-            yarp.delay(0.5)
+            yarp.delay(1)
             return True
         except Exception as e:
             warning("Unable to connect to the world port with gazebo: " + str(e))

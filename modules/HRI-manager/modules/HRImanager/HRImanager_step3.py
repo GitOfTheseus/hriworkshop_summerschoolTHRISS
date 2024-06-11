@@ -180,7 +180,6 @@ class HRImanager(yarp.RFModule):
 
         if self.current_state == State.WAITING_FOR_STIMULI:
 
-            self.speech.trigger_listener()
             self.object_class_list = self.objectReader.read()
             if self.object_class_list:
                 self.object_class_list = [obj for obj in self.object_class_list if obj != "person"]
@@ -188,9 +187,7 @@ class HRImanager(yarp.RFModule):
                 if len(self.object_class_list) > 0:
                     self.object_class_dict = self.objectReader.localize()
 
-                    self.text = self.speech.listen()
-                    if self.text:
-
+                    if self.object_class_dict:
                         self.changeState(State.REASONING)
 
         elif self.current_state == State.REASONING:
@@ -202,8 +199,15 @@ class HRImanager(yarp.RFModule):
                     self.object_position = self.object_class_dict[obj]
 
                     self.object_direction = self.objectReader.discretized_position(self.object_position)
-                    self.object_name = self.speech.reason(self.text)
-                    self.memory.store_working_memory(self.object_category, object_position=self.object_position, object_direction=self.object_direction, name=self.object_name)
+                    self.text = self.speech.listen()
+                    if self.text:
+                        self.object_name = self.speech.reason(self.text)
+
+                        self.memory.store_working_memory(self.object_category, object_position=self.object_position,
+                                                         object_direction=self.object_direction, name=self.object_name)
+                    else:
+                        self.memory.store_working_memory(self.object_category, object_position=self.object_position,
+                                                         object_direction=self.object_direction)
                     self.memory.store_long_term_memory()
                     self.changeState(State.ACTING_TOWARD_ENVIRONMENT)
 
