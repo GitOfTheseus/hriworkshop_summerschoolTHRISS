@@ -1,0 +1,29 @@
+<application>
+    <name>Text2Speech</name>
+
+    <authors>
+        <author email="luca.garello@iit.it"> Luca Garello </author> 
+    </authors>
+
+    <!-- ======== MODULES ======== -->
+    <module>
+        <name>text2speech</name>
+        <parameters></parameters>
+        <node>icubsrv</node>
+    </module>
+
+    <!-- ======== CONNECTIONS ======== -->
+    <!-- <connection>
+        <from> /icub/cam/left </from>
+        <to> /objectRecognition/image:i </to>
+        <protocol>tcp</protocol>
+    </connection>
+
+    <connection>
+        <from>/objectRecognition/annotated_image:o</from>
+        <to> /yarpview/annotated_image:i </to>
+        <protocol>tcp</protocol>
+    </connection> -->
+
+
+</application>
