@@ -15,9 +15,10 @@ class Speech:
 
         if self.text_in_port.getInputCount():
             self.trigger_listener(1)
-            yarp.delay(3)
+            yarp.delay(6)
             self.trigger_listener(0)
-            speech_bottle = self.text_in_port.read(False)
+            speech_bottle = self.text_in_port.read(True)
+            print("speech received ", speech_bottle.toString())
             if speech_bottle is not None:
                 text = speech_bottle.get(0).asString()
 
