@@ -128,6 +128,7 @@ class ObjectReader:
     def switch_detection_to_world(self):
         try:
             yarp.Network.disconnect('/icubSim/cam/left/rgbImage:o', '/objectRecognition/image:i')
+            yarp.delay(1)
             yarp.Network.connect('/webcam', '/objectRecognition/image:i')
             yarp.delay(1)
             return True
@@ -138,6 +139,7 @@ class ObjectReader:
     def switch_detection_to_simulation(self):
         try:
             yarp.Network.disconnect('/webcam', '/objectRecognition/image:i')
+            yarp.delay(1)
             yarp.Network.connect('/icubSim/cam/left/rgbImage:o', '/objectRecognition/image:i')
             yarp.delay(1)
             return True
