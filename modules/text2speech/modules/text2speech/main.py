@@ -69,7 +69,7 @@ class Text2SpeechModule(yarp.RFModule):
     def play_mp3(self,file_path):
         """Play the mp3 file using mpv player"""
         try:
-            subprocess.run(['aplay', '-r', '240000', file_path])
+            subprocess.run(['ffplay', '-autoexit', '-nodisp', file_path])
         except Exception as e:
             print(f"Errore durante la riproduzione del file: {e}")        
 

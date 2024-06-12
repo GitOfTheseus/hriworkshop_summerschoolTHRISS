@@ -4,3 +4,4 @@ logs
 build
 modules/HRI-manager/modules/HRImanager/object_info.json
 modules/HRI-manager/modules/HRImanager/utils/__pycache__
+text.mp3
