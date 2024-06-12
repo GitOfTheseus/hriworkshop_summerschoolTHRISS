@@ -108,7 +108,6 @@ class HRImanager(yarp.RFModule):
         # final configuration before starting the thread
         self.action.execute("go_home_human")
         self.world.save_coordinates()
-        self.memory.retrieve_long_term_memory()
         self.current_state = State.WAITING_FOR_STIMULI
 
         info("Initialization complete")
@@ -219,14 +218,14 @@ class HRImanager(yarp.RFModule):
         if not self.establish_connection('/objectRecognition/objects:o', self.obj_in_port.getName()):
             return False
 
-        if not self.establish_connection('/webcam', '/view:webcam'):
+        if not self.establish_connection('/icubSim/cam/left/rgbImage:o', '/view:obj'):
             return False
 
-        if not self.establish_connection('/icubSim/cam/left/rgbImage:o', '/view:sim'):
+        """if not self.establish_connection('/icubSim/cam/left/rgbImage:o', '/view:sim'):
             return False
 
         if not self.establish_connection('/objectRecognition/annotated_image:o', '/view:obj'):
-            return False
+            return False"""
 
         # haptic
         if not self.establish_connection('/icube/events:o', '/HRImanager/cube:event:i'):

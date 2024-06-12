@@ -8,9 +8,11 @@ services:
       - "10000:10000/udp"
     devices:
       # add camera
-      - "/dev/video1:/dev/video1"
+      - "/dev/video0:/dev/video0"
       # add microphone
       - "/dev/snd:/dev/snd"
+      # add icube
+      - "/dev/ttyUSB0:/dev/ttyUSB0"
     
     volumes:
       - /tmp/.X11-unix/:/tmp/.X11-unix/

@@ -226,17 +226,17 @@ class HRImanager(yarp.RFModule):
     def ports_connection(self):
 
         # vision
-        if not self.establish_connection('/icubSim/cam/left/rgbImage:o', '/objectRecognition/image:i'):
-            return False
+        """if not self.establish_connection('/icubSim/cam/left/rgbImage:o', '/objectRecognition/image:i'):
+            return False"""
 
         if not self.establish_connection('/objectRecognition/objects:o', self.obj_in_port.getName()):
             return False
 
-        if not self.establish_connection('/webcam', '/view:webcam'):
+        """if not self.establish_connection('/webcam', '/view:webcam'):
             return False
 
         if not self.establish_connection('/icubSim/cam/left/rgbImage:o', '/view:sim'):
-            return False
+            return False"""
 
         if not self.establish_connection('/objectRecognition/annotated_image:o', '/view:obj'):
             return False

@@ -5,3 +5,6 @@ build
 modules/HRI-manager/modules/HRImanager/object_info.json
 modules/HRI-manager/modules/HRImanager/utils/__pycache__
 text.mp3
+modules/text2speech/CMakeCache.txt
+modules/text2speech/CMakeFiles/
+object_info.json
