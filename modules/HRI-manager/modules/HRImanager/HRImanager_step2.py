@@ -104,7 +104,6 @@ class HRImanager(yarp.RFModule):
         # final configuration before starting the thread
         self.action.execute("go_home_human")
         self.world.save_coordinates()
-        self.memory.retrieve_long_term_memory()
         self.current_state = State.WAITING_FOR_STIMULI
 
         info("Initialization complete")

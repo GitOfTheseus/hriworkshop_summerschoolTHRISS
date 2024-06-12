@@ -25,9 +25,9 @@ class Action:
             action_bottle.addString("exe")
             action_bottle.addString(action)
             self.action_port.write(action_bottle, response)
-            print("Sending to action port cmd: {}".format(action_bottle.toString()))
+            #print("Sending to action port cmd: {}".format(action_bottle.toString()))
             for i in range(response.size()):
-                print(f"Response is {response.get(i).toString()}")
+                #print(f"Response is {response.get(i).toString()}")
                 if response.get(i).asString() == "ok":
                     return True
 
@@ -57,7 +57,7 @@ class Action:
             self.gaze_rpc_port.write(request_bottle, response_bottle)
             #yarp.delay(1.5)
 
-            print(f"requesting the following command: {request_bottle.toString()}. Response: {response_bottle.toString()}")
+            #print(f"requesting the following command: {request_bottle.toString()}. Response: {response_bottle.toString()}")
 
     def speak(self, name):
 
