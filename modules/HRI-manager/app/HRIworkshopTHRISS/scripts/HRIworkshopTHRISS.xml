@@ -2,19 +2,12 @@
     <name>workshopTHRISS</name>
 
     <authors>
-        <author email="luca.garello@iit.it"> Luca Garello</author>
         <author email="carlo.mazzola@iit.it"> Carlo Mazzola</author>
     </authors>
 
     <!--> #############  ############# ############# <!-->
     <!--> #############     Modules    ############# <!-->
     <!--> #############  ############# ############# <!-->
-
-    <module>
-        <name>HRImanager</name>
-        <parameters></parameters>
-        <node>localhost</node>
-    </module>
 
     <module>
         <name>gazebo</name>
@@ -36,7 +29,7 @@
 
     <module>
         <name>speech2text</name>
-        <parameters>--model tiny</parameters>
+        <parameters></parameters>
         <node>localhost</node>
     </module>
 
@@ -47,20 +40,14 @@
     </module>
 
     <module>
+        <name>text2speech</name>
+        <parameters></parameters>
+        <node>localhost</node>
+    </module>
+
+    <module>
         <name>yarpdev</name>
         <parameters>--device opencv_grabber --name /webcam/image:o --width 640 --height 480</parameters>
-        <node>localhost</node>
-    </module>
-
-    <module>
-        <name>yarpview</name>
-        <parameters>--name /view:sim</parameters>
-        <node>localhost</node>
-    </module>
-
-    <module>
-        <name>yarpview</name>
-        <parameters>--name /view:webcam</parameters>
         <node>localhost</node>
     </module>
 
@@ -108,26 +95,8 @@
     <!--> ############# vision ############# <!-->
 
     <connection>
-	<from>/icubSim/cam/left/rgbImage:o</from>
-	<to>/objectRecognition/image:i</to>
-	<protocol>tcp</protocol>
-    </connection>
-
-    <connection>
         <from>/objectRecognition/objects:o</from>
         <to>/HRImanager/objects:i</to>
-        <protocol>tcp</protocol>
-    </connection>
-
-    <connection>
-        <from>/webcam</from>
-        <to>/view:webcam</to>
-        <protocol>tcp</protocol>
-    </connection>
-
-    <connection>
-        <from>/icubSim/cam/left/rgbImage:o</from>
-        <to>/view:sim</to>
         <protocol>tcp</protocol>
     </connection>
 
@@ -161,13 +130,19 @@
     
     <connection>
         <from>/HRImanager/LLM:o</from>
-        <to>/iChat/text:i</to>
+        <to>/iChat/question:i</to>
         <protocol>tcp</protocol>
     </connection>  
     
     <connection>
-        <from>/LLMagent/answer:o</from>
-        <to>/iChat/LLM:i</to>
+        <from>/iChat/answer:o</from>
+        <to>/HRImanager/LLM:i</to>
+        <protocol>tcp</protocol>
+    </connection>
+
+    <connection>
+        <from>/HRImanager/speech:o</from>
+        <to>/text2speech/text:i</to>
         <protocol>tcp</protocol>
     </connection>
 
