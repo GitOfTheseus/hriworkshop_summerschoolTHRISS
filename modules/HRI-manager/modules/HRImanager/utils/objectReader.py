@@ -47,7 +47,7 @@ class ObjectReader:
 
         return
 
-    def focus(self, object_category="banana"):
+    def focus(self, object_category=""):
 
         if self.obj_in_port.getInputCount():
             input_bottle = self.obj_in_port.read(False)

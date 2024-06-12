@@ -12,21 +12,11 @@ class Cube:
         if self.event_port.getInputCount():
             event_bottle = self.event_port.read(False)
             if event_bottle is not None:
-                event = event_bottle.get(0).asString()
+                event = event_bottle.get(100).asString() #100 is not the correct number... what is it?
                 return event
-
-    def process_event(self, event, object_category=None):
-
-        if event == "grab":
-            print(event)
-            # todo lift the object on the table (if object is not None, lift that object)
-        elif event == "pose":
-            print(event)
-            # todo lay the object down on the table (if object is not None, lay that object down)
 
     def read_and_process(self, object_category=None):
 
         event = self.read_event()
-        #self.process_event(event, object_category)
-        if event in ["grab", "pose"]:
+        if event in []:  # which events ? read from the correct port to fill the list with the possible ones!
             return event

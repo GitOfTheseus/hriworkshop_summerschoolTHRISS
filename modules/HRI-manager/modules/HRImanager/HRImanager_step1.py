@@ -212,7 +212,7 @@ class HRImanager(yarp.RFModule):
     def ports_connection(self):
 
         # vision
-        if not self.establish_connection('/icubSim/cam/left/rgbImage:o', '/objectRecognition/image:i'):
+        if not self.establish_connection('/icubSim/cam/left/rgbImage:o', ''):
             return False
 
         if not self.establish_connection('/objectRecognition/objects:o', self.obj_in_port.getName()):
@@ -221,12 +221,6 @@ class HRImanager(yarp.RFModule):
         if not self.establish_connection('/icubSim/cam/left/rgbImage:o', '/view:obj'):
             return False
 
-        """if not self.establish_connection('/icubSim/cam/left/rgbImage:o', '/view:sim'):
-            return False
-
-        if not self.establish_connection('/objectRecognition/annotated_image:o', '/view:obj'):
-            return False"""
-
         # haptic
         if not self.establish_connection('/icube/events:o', '/HRImanager/cube:event:i'):
             return False
@@ -234,27 +228,11 @@ class HRImanager(yarp.RFModule):
         if not self.establish_connection(self.world_rpc_port.getName(), '/world_input_port'):
             return False
 
-        # speech
-        """if not self.establish_connection(self.bookmark_out_port.getName(), '/speech2text/bookmark:i'):
-            return False
-
-        if not self.establish_connection('/speech2text/text:o', self.text_in_port.getName()):
-            return False
-
-        if not self.establish_connection(self.LLM_out_port.getName(), '/iChat/question:i'):
-            return False
-
-        if not self.establish_connection('/iChat/answer:o', self.LLM_in_port.getName()):
-            return False
-
-        if not self.establish_connection(self.speech_out_port.getName(), "/text2speech/text:i"):
-            return False"""
-
         # actions
         if not self.establish_connection(self.action_rpc_port.getName(), '/interactionInterface'):
             return False
 
-        if not self.establish_connection(self.gaze_rpc_port.getName(), '/iKinGazeCtrl/rpc'):
+        if not self.establish_connection(self.gaze_rpc_port.getName(), ''):
             return False
 
         return True
