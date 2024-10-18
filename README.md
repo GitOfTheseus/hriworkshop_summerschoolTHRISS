@@ -1,5 +1,6 @@
 # SummerSchool
 This repo offers a docker to test social behaivours on a simulated iCub robot.
+It was created for a hands-on human-robot interaction workshop at the 2024 THRISS Summer School https://terais.eu/thriss
 In the docker you will find:
 - YARP 3.9
 - Gazebo
@@ -29,3 +30,8 @@ from another terminal run
 
 From new docker terminal \
 ```gzclient```
+
+# Authors
+
+MissingSignals (https://github.com/MissingSignal) created the Docker Env, and the modules iChat, objectRecognition, speech2text, text2speech
+GitOfTheseus (https://github.com/GitOfTheseus) created the module HRI-manager and edited the speech2text and the icub-interaction-demos 
